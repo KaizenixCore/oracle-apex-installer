@@ -13,7 +13,7 @@
 #  ╠═══════════════════════════════════════════════════════════════════════════╣
 #  ║  Created by : Peyman Rasouli                                              ║
 #  ║  Project    : KaizenixCore                                                ║
-#  ║  GitHub     : https://github.com/peymanrasouli                            ║
+#  ║  GitHub     : https://github.com/KaizenixCore/oracle-apex-installer       ║
 #  ║  License    : MIT                                                         ║
 #  ╠═══════════════════════════════════════════════════════════════════════════╣
 #  ║                           FEATURES                                        ║
@@ -90,7 +90,7 @@ print_banner() {
     echo -e "${WHITE}${BOLD}  ╠═══════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${WHITE}${BOLD}  ║${NC}  ${DIM}Created by:${NC} ${CYAN}Peyman Rasouli${NC}                                    ${WHITE}${BOLD}║${NC}"
     echo -e "${WHITE}${BOLD}  ║${NC}  ${DIM}Project:${NC}    ${MAGENTA}KaizenixCore${NC}                                       ${WHITE}${BOLD}║${NC}"
-    echo -e "${WHITE}${BOLD}  ║${NC}  ${DIM}GitHub:${NC}     ${BLUE}https://github.com/peymanrasouli${NC}                   ${WHITE}${BOLD}║${NC}"
+    echo -e "${WHITE}${BOLD}  ║${NC}  ${DIM}GitHub:${NC}     ${BLUE}https://github.com/KaizenixCore/oracle-apex-installer${NC}                   ${WHITE}${BOLD}║${NC}"
     echo -e "${WHITE}${BOLD}  ╚═══════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -1271,7 +1271,7 @@ step_25_summary() {
     echo ""
     echo -e "${GRAY}  ═══════════════════════════════════════════════════════════════════${NC}"
     echo -e "${GRAY}   Created by: ${WHITE}Peyman Rasouli${NC} ${GRAY}| Project: ${MAGENTA}KaizenixCore${NC}"
-    echo -e "${GRAY}   GitHub: ${BLUE}https://github.com/peymanrasouli${NC}"
+    echo -e "${GRAY}   GitHub: ${BLUE}https://github.com/KaizenixCore/oracle-apex-installer${NC}"
     echo -e "${GRAY}  ═══════════════════════════════════════════════════════════════════${NC}"
     echo ""
 }
