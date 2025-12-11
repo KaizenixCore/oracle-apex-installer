@@ -187,6 +187,16 @@ Hilfsskripte befinden sich in `~/oracle-apex-complete/scripts/`:
 
 <br>
 
+## ㅤ
+
+___🚀 Schnellinstallation___
+
+```
+curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
+
+```
+***
+
 ## 📄 Lizenz
 
 Dieses Projekt ist unter der **MIT-Lizenz** lizenziert - siehe [LICENSE](../LICENSE) für Details.
