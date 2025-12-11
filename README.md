@@ -192,7 +192,7 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 ___🚀 Quick Installation___
 
 ```
-curl -fsSL https://github.com/KaizenixCore/oracle-apex-installer/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
+curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
 
 ```
 ***
