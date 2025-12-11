@@ -187,6 +187,16 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 
 <br>
 
+## ㅤ
+
+___🚀 Quick Installation___
+
+```
+curl -fsSL https://github.com/KaizenixCore/oracle-apex-installer/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
+
+```
+***
+
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
