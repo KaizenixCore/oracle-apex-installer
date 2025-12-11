@@ -186,7 +186,15 @@
 </div>
 
 <br>
+<br>ㅤ
 
+___🚀 نصب سریع___
+
+```
+curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
+
+```
+***
 ## 📄 مجوز
 
 این پروژه تحت مجوز **MIT** منتشر شده است - برای جزئیات فایل [LICENSE](../LICENSE) را ببینید.
