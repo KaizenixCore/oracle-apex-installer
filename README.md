@@ -309,15 +309,26 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 
 <div align="center">
 
-### 🖥️ Native GUI Manager
+### 🖥️ New: Native GUI Manager
+<p><i>Manage your APEX instance with a modern, graphical interface</i></p>
 
-| Main Menu | Status Check |
+| Main Menu Dashboard | Status & Progress |
 | :---: | :---: |
-| ![Main Menu](assets/screenshots/gui-menu.png) | ![Status](assets/screenshots/gui-status.png) |
+| ![Main Menu](assets/screenshots/gui-main-menu.png) | ![Status](assets/screenshots/gui-status.png) |
+
+<br>
+
+### 💻 Classic Terminal Interface
+<p><i>The powerful CLI installer you know and love</i></p>
+
+| Installer Start (Banner) | Installation Success |
+| :---: | :---: |
+| ![Start](assets/screenshots/cli-start.png) | ![Success](assets/screenshots/cli-success.png) |
 
 <br>
 
 ### 🌐 Web Interface
+<p><i>Your fully deployed Oracle APEX environment</i></p>
 
 | Landing Page | APEX Dashboard |
 | :---: | :---: |
@@ -344,6 +355,8 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 </div>
 
 <br>
+<br>
+
 ## ㅤ
 
 ___🚀 Quick Installation___
@@ -352,7 +365,6 @@ curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/
 
 ```
 ***
-<br>
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
