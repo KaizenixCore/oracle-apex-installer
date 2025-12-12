@@ -314,7 +314,7 @@
 
 | داشبورد منوی اصلی | وضعیت و پیشرفت |
 | :---: | :---: |
-| ![Main Menu](../assets/screenshots/gui-main-menu.jpg) | ![Status](../assets/screenshots/gui-status.jpg) |
+| ![Main Menu](../assets/screenshots/gui-main-menu.png) | ![Status](../assets/screenshots/gui-status.png) |
 
 <br>
 
@@ -323,7 +323,7 @@
 
 | شروع نصب (بنر) | موفقیت نصب |
 | :---: | :---: |
-| ![Start](../assets/screenshots/cli-start.jpg) | ![Success](../assets/screenshots/cli-success.jpg) |
+| ![Start](../assets/screenshots/cli-start.png) | ![Success](../assets/screenshots/cli-success.png) |
 
 <br>
 
@@ -332,7 +332,7 @@
 
 | صفحه لندینگ | داشبورد APEX |
 | :---: | :---: |
-| ![Landing](../assets/screenshots/landing.jpg) | ![Dashboard](../assets/screenshots/dashboard.jpg) |
+| ![Landing](../assets/screenshots/landing.png) | ![Dashboard](../assets/screenshots/dashboard.png) |
 
 </div>
 
