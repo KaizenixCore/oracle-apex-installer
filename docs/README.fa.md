@@ -314,7 +314,7 @@
 
 | داشبورد منوی اصلی | وضعیت و پیشرفت |
 | :---: | :---: |
-| ![Main Menu](assets/screenshots/gui-main-menu.png) | ![Status](assets/screenshots/gui-status.png) |
+| ![Main Menu](assets/screenshots/gui-main-menu.png) | ![Status](assets/screenshots/gui-main-menu.png) |
 
 <br>
 
