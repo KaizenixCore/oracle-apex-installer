@@ -359,7 +359,7 @@
 
 ## ㅤ
 
-___🚀 Quick Installation___
+___🚀 نصب سریع___
 ```
 curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
 
@@ -427,13 +427,29 @@ curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/
 
 <br>
 
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Love-You%20Gesture.png" width="45"/>
+<div align="center">
 
-### ساخته شده با ❤️ توسط
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Love-You%20Gesture.png" width="48"/>
 
-# [پیمان رسولی](https://github.com/peymanrasouli)
+### ساخته شده با ❤️ و عشق به متن‌باز
 
-<sub>توسعه‌دهنده فول‌استک و علاقه‌مند به متن‌باز</sub>
+<h2>پیمان رسولی</h2>
+
+<sub>
+توسعه‌دهنده فول‌استک • بنیان‌گذار <b>KaizenixCore</b> • علاقه‌مند به DevOps و Open Source
+</sub>
+
+<br><br>
+
+<a href="https://github.com/KaizenixCore">
+  <img src="https://img.shields.io/badge/GitHub-KaizenixCore-181717?style=for-the-badge&logo=github&logoColor=white"/>
+</a>
+&nbsp;
+<a href="https://github.com/KaizenixCore/oracle-apex-installer">
+  <img src="https://img.shields.io/badge/Project-Oracle_APEX_Installer-F80000?style=for-the-badge&logo=oracle&logoColor=white"/>
+</a>
+
+</div>
 
 <br>
 
