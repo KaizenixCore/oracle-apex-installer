@@ -51,7 +51,7 @@
       </a>
     </td>
     <td align="center" style="padding: 20px;">
-      <a href="docs/README.de.md">
+      <a href="README.de.md">
         <img src="https://flagcdn.com/w80/de.png" width="60" style="border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"/><br><br>
         <b>🇩🇪 Deutsch</b>
       </a>
@@ -314,7 +314,7 @@
 
 | داشبورد منوی اصلی | وضعیت و پیشرفت |
 | :---: | :---: |
-| ![Main Menu](assets/screenshots/gui-main-menu.png) | ![Status](assets/screenshots/gui-main-menu.png) |
+| ![Main Menu](../assets/screenshots/gui-main-menu.jpg) | ![Status](../assets/screenshots/gui-status.jpg) |
 
 <br>
 
@@ -323,7 +323,7 @@
 
 | شروع نصب (بنر) | موفقیت نصب |
 | :---: | :---: |
-| ![Start](assets/screenshots/cli-start.png) | ![Success](assets/screenshots/cli-success.png) |
+| ![Start](../assets/screenshots/cli-start.jpg) | ![Success](../assets/screenshots/cli-success.jpg) |
 
 <br>
 
@@ -332,7 +332,7 @@
 
 | صفحه لندینگ | داشبورد APEX |
 | :---: | :---: |
-| ![Landing](assets/screenshots/landing.png) | ![Dashboard](assets/screenshots/dashboard.png) |
+| ![Landing](../assets/screenshots/landing.jpg) | ![Dashboard](../assets/screenshots/dashboard.jpg) |
 
 </div>
 
@@ -355,19 +355,10 @@
 </div>
 
 <br>
-<br>
 
-## ㅤ
-
-___🚀 نصب سریع___
-```
-curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
-
-```
-***
 ## 📄 مجوز
 
-این پروژه تحت **مجوز MIT** منتشر شده است - فایل [LICENSE](LICENSE) را برای جزئیات ببینید.
+این پروژه تحت **مجوز MIT** منتشر شده است - فایل [LICENSE](../LICENSE) را برای جزئیات ببینید.
 
 <br>
 
@@ -431,7 +422,7 @@ curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/
 
 ### ساخته شده با ❤️ توسط
 
-# [[پیمان رسولی](https://github.com/peymanrasouli](https://github.com/KaizenixCore/oracle-apex-installer/))
+# [پیمان رسولی](https://github.com/peymanrasouli)
 
 <sub>توسعه‌دهنده فول‌استک و علاقه‌مند به متن‌باز</sub>
 
