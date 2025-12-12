@@ -28,6 +28,9 @@
 #  ║  ✅ One-Click Start/Stop/Fix Management Scripts                           ║
 #  ║  ✅ Comprehensive Logging & Error Handling                                ║
 #  ║  ✅ Password Validation & Security Best Practices                         ║
+#  ║  ✅ GUI Manager with Zenity Support                                       ║
+#  ║  ✅ Systemd Service Auto-Start                                            ║
+#  ║  ✅ Desktop Application (.desktop file)                                   ║
 #  ╚═══════════════════════════════════════════════════════════════════════════╝
 #
 ################################################################################
@@ -70,7 +73,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 CURRENT_STEP=0
-TOTAL_STEPS=25
+TOTAL_STEPS=27
 
 print_banner() {
     clear
@@ -235,9 +238,6 @@ test_db_connection() {
     return 1
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 1-4: Init, Check, Prerequisites, Cleanup
-# ═══════════════════════════════════════════════════════════════════════════════
 step_01_init() {
     log_step "Initializing Project"
     mkdir -p "$PROJECT_DIR" "$DOWNLOADS_DIR" "$LOG_DIR" "$IMAGES_DIR" "$SCRIPTS_DIR" "$ORDS_CONFIG_DIR"
@@ -267,9 +267,9 @@ step_03_prerequisites() {
     [ -f /etc/os-release ] && . /etc/os-release && OS_TYPE="$ID"
 
     case "$OS_TYPE" in
-        opensuse*|suse) sudo zypper --non-interactive install -y docker docker-compose java-17-openjdk unzip wget curl 2>/dev/null || true ;;
-        ubuntu|debian) sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose openjdk-17-jdk unzip wget curl 2>/dev/null || true ;;
-        fedora|rhel|centos) sudo dnf install -y docker docker-compose java-17-openjdk unzip wget curl 2>/dev/null || true ;;
+        opensuse*|suse) sudo zypper --non-interactive install -y docker docker-compose java-17-openjdk unzip wget curl zenity 2>/dev/null || true ;;
+        ubuntu|debian) sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose openjdk-17-jdk unzip wget curl zenity 2>/dev/null || true ;;
+        fedora|rhel|centos) sudo dnf install -y docker docker-compose java-17-openjdk unzip wget curl zenity 2>/dev/null || true ;;
     esac
 
     sudo systemctl enable docker 2>/dev/null || true
@@ -305,9 +305,6 @@ step_04_cleanup() {
     log_success "Cleanup completed"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 5-6: Download and Extract
-# ═══════════════════════════════════════════════════════════════════════════════
 step_05_download() {
     log_step "Downloading Components"
     cd "$PROJECT_DIR"
@@ -350,9 +347,6 @@ step_06_extract() {
     log_success "Images copied"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 7-8: Docker Compose and Start Database
-# ═══════════════════════════════════════════════════════════════════════════════
 step_07_docker_compose() {
     log_step "Creating Docker Compose Configuration"
     cd "$PROJECT_DIR"
@@ -397,9 +391,6 @@ step_08_start_db() {
     log_success "Database running"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 9: Disable Password Policies
-# ═══════════════════════════════════════════════════════════════════════════════
 step_09_disable_policies() {
     log_step "Disabling Password Policies"
 
@@ -416,9 +407,6 @@ EOSQL" 2>&1 | tee "$LOG_DIR/policies.log" || true
     log_success "Policies disabled"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 10: Install APEX
-# ═══════════════════════════════════════════════════════════════════════════════
 step_10_install_apex() {
     log_step "Installing Oracle APEX"
 
@@ -448,9 +436,6 @@ EOSQL" 2>&1 | tee "$LOG_DIR/apex_install.log" | grep -iE "phase|complete|error|t
     fi
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 11: Configure APEX REST
-# ═══════════════════════════════════════════════════════════════════════════════
 step_11_apex_rest() {
     log_step "Configuring APEX REST Services"
 
@@ -463,16 +448,12 @@ EOSQL" 2>&1 | tee "$LOG_DIR/apex_rest.log" | grep -iE "complete|error" || true
     log_success "APEX REST configured"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 12: Create Database Users - CRITICAL FIX FOR PROXY
-# ═══════════════════════════════════════════════════════════════════════════════
 step_12_create_users() {
     log_step "Creating Database Users"
 
     docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << EOSQL
 SET SERVEROUTPUT ON
 
--- Drop and recreate ORDS_PUBLIC_USER
 BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
 /
 
@@ -490,7 +471,6 @@ GRANT CREATE TYPE TO ORDS_PUBLIC_USER;
 GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
 ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
 
--- APEX_PUBLIC_USER
 BEGIN
     EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK';
 EXCEPTION WHEN OTHERS THEN
@@ -504,7 +484,6 @@ GRANT CONNECT TO APEX_PUBLIC_USER;
 GRANT CREATE SESSION TO APEX_PUBLIC_USER;
 ALTER USER APEX_PUBLIC_USER ACCOUNT UNLOCK;
 
--- APEX_LISTENER
 BEGIN
     EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK';
 EXCEPTION WHEN OTHERS THEN
@@ -518,7 +497,6 @@ GRANT CONNECT TO APEX_LISTENER;
 GRANT CREATE SESSION TO APEX_LISTENER;
 ALTER USER APEX_LISTENER ACCOUNT UNLOCK;
 
--- APEX_REST_PUBLIC_USER
 BEGIN
     EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK';
 EXCEPTION WHEN OTHERS THEN
@@ -539,9 +517,6 @@ EOSQL" 2>&1 | tee "$LOG_DIR/users.log"
     log_success "Database users created"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 13: CRITICAL - Grant Proxy Authentication
-# ═══════════════════════════════════════════════════════════════════════════════
 step_13_grant_proxy() {
     log_step "Granting Proxy Authentication (CRITICAL)"
 
@@ -550,14 +525,10 @@ step_13_grant_proxy() {
     docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << EOSQL
 SET SERVEROUTPUT ON
 
--- CRITICAL: Grant proxy authentication to ORDS_PUBLIC_USER
--- This allows ORDS to connect AS other users (APEX_PUBLIC_USER, etc.)
-
 ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 
--- Also grant to APEX schema users
 DECLARE
     v_apex_schema VARCHAR2(30);
 BEGIN
@@ -575,7 +546,6 @@ EXCEPTION
 END;
 /
 
--- Grant execute on DBMS packages
 GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER;
 GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER;
 GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER;
@@ -584,7 +554,6 @@ GRANT EXECUTE ON SYS.DBMS_UTILITY TO ORDS_PUBLIC_USER;
 
 COMMIT;
 
--- Verify proxy grants
 SELECT * FROM DBA_PROXIES WHERE CLIENT IN ('APEX_PUBLIC_USER', 'APEX_LISTENER', 'APEX_REST_PUBLIC_USER');
 
 EXIT;
@@ -593,9 +562,6 @@ EOSQL" 2>&1 | tee "$LOG_DIR/proxy_grants.log"
     log_success "Proxy authentication granted"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 14: Create APEX Admin
-# ═══════════════════════════════════════════════════════════════════════════════
 step_14_apex_admin() {
     log_step "Creating APEX Admin"
 
@@ -612,7 +578,6 @@ step_14_apex_admin() {
     docker exec oracle-apex-db bash -c "cd /opt/oracle/apex && sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << EOSQL
 SET SERVEROUTPUT ON
 
--- Set instance parameters
 BEGIN
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('RESTFUL_SERVICES_ENABLED', 'Y');
@@ -622,7 +587,6 @@ EXCEPTION WHEN OTHERS THEN
 END;
 /
 
--- Create ADMIN user
 BEGIN
     ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
 
@@ -662,19 +626,14 @@ EOSQL" 2>&1 | tee "$LOG_DIR/admin.log"
     log_success "APEX Admin configured"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 15: Grant Additional Privileges
-# ═══════════════════════════════════════════════════════════════════════════════
 step_15_privileges() {
     log_step "Granting Additional Privileges"
 
     local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
 
     docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << EOSQL
--- Grant execute on APEX packages to ORDS_PUBLIC_USER
 GRANT EXECUTE ON ${apex_schema}.WWV_FLOW_EPG_INCLUDE_MODULES TO ORDS_PUBLIC_USER;
 
--- Grant select on APEX views
 BEGIN
     FOR r IN (SELECT object_name FROM all_objects WHERE owner = '${apex_schema}' AND object_type IN ('VIEW', 'PACKAGE') AND object_name LIKE 'WWV%' AND ROWNUM <= 50) LOOP
         BEGIN
@@ -692,9 +651,6 @@ EOSQL" 2>&1 | tee "$LOG_DIR/privileges.log"
     log_success "Privileges granted"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 16: Create ORDS Config Files
-# ═══════════════════════════════════════════════════════════════════════════════
 step_16_create_ords_config() {
     log_step "Creating ORDS Configuration Files"
     cd "$PROJECT_DIR"
@@ -769,9 +725,6 @@ EOF
     log_success "ORDS configuration files created"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 17: Install ORDS into Database - FIXED PASSWORD HANDLING
-# ═══════════════════════════════════════════════════════════════════════════════
 step_17_install_ords_db() {
     log_step "Installing ORDS into Database"
     cd "$PROJECT_DIR"
@@ -781,14 +734,11 @@ step_17_install_ords_db() {
     log_warning "CRITICAL: Installing ORDS schema into database..."
     log_info "This step takes 3-7 minutes..."
 
-    # Method 1: Using environment variable for password
     export ORDS_PASSWORD="${ORACLE_PASSWORD}"
 
-    # Create password file
     echo "${ORACLE_PASSWORD}" > "$PROJECT_DIR/.ords_pwd"
     chmod 600 "$PROJECT_DIR/.ords_pwd"
 
-    # Install ORDS - Fixed command without --proxy-user password requirement
     "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
         --admin-user sys \
         --db-hostname localhost \
@@ -810,9 +760,6 @@ EOF
     log_success "ORDS database installation completed"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 18: Configure ORDS via CLI
-# ═══════════════════════════════════════════════════════════════════════════════
 step_18_configure_ords_cli() {
     log_step "Configuring ORDS via CLI"
     cd "$PROJECT_DIR"
@@ -829,25 +776,19 @@ step_18_configure_ords_cli() {
     log_success "ORDS CLI configuration done"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 19: Final Unlock and Verify Proxy
-# ═══════════════════════════════════════════════════════════════════════════════
 step_19_final_unlock() {
     log_step "Final Unlock and Verify Proxy"
 
     docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << EOSQL
--- Final unlock
 ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
 ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
 ALTER USER APEX_LISTENER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
 ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
 
--- Re-grant proxy (in case it was lost)
 ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 
--- Verify
 SELECT PROXY, CLIENT, AUTHENTICATION FROM DBA_PROXIES WHERE PROXY = 'ORDS_PUBLIC_USER';
 
 COMMIT;
@@ -863,7 +804,6 @@ EOSQL" 2>&1 | tee "$LOG_DIR/final_unlock.log"
         log_warning "Connection test result: $result"
     fi
 
-    # Test proxy connection
     log_info "Testing proxy connection to APEX_PUBLIC_USER..."
     local proxy_result=$(docker exec oracle-apex-db bash -c "echo 'SELECT USER FROM DUAL;' | sqlplus -s ORDS_PUBLIC_USER[APEX_PUBLIC_USER]/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1" 2>&1)
 
@@ -874,9 +814,6 @@ EOSQL" 2>&1 | tee "$LOG_DIR/final_unlock.log"
     fi
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 20: Verify ORDS Config
-# ═══════════════════════════════════════════════════════════════════════════════
 step_20_verify_config() {
     log_step "Verifying ORDS Configuration"
 
@@ -905,9 +842,6 @@ step_20_verify_config() {
     log_success "Configuration verified"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 21: Start ORDS
-# ═══════════════════════════════════════════════════════════════════════════════
 step_21_start_ords() {
     log_step "Starting ORDS"
     cd "$PROJECT_DIR"
@@ -966,9 +900,6 @@ step_21_start_ords() {
     sleep 15
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 22: Create Scripts
-# ═══════════════════════════════════════════════════════════════════════════════
 step_22_scripts() {
     log_step "Creating Management Scripts"
 
@@ -1020,33 +951,27 @@ PASS=$(cat .db_password)
 echo "Running comprehensive fix..."
 echo ""
 
-# Stop ORDS
 echo "Stopping ORDS..."
 pkill -f ords 2>/dev/null || true
 sleep 3
 
-# Fix database accounts and proxy
 echo "Fixing database accounts and proxy permissions..."
 docker exec oracle-apex-db bash -c "sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << EOF
--- Unlock accounts
 ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
 ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
 ALTER USER APEX_LISTENER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
 ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
 
--- CRITICAL: Grant proxy authentication
 ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 
--- Verify
 SELECT PROXY, CLIENT FROM DBA_PROXIES WHERE PROXY = 'ORDS_PUBLIC_USER';
 
 COMMIT;
 EXIT;
 EOF"
 
-# Recreate pool.xml
 echo "Recreating pool.xml..."
 mkdir -p ~/oracle-apex-complete/ords_config/databases/default
 cat > ~/oracle-apex-complete/ords_config/databases/default/pool.xml << EOF
@@ -1070,7 +995,6 @@ cat > ~/oracle-apex-complete/ords_config/databases/default/pool.xml << EOF
 </properties>
 EOF
 
-# Start ORDS
 echo "Starting ORDS..."
 ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f | head -1)
 export ORDS_CONFIG=~/oracle-apex-complete/ords_config
@@ -1080,7 +1004,6 @@ nohup "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config serve --port 8080 
 echo "Waiting 60s for ORDS to start..."
 sleep 60
 
-# Check status
 HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/ 2>/dev/null || echo "000")
 HTTP_APEX=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/apex_admin 2>/dev/null || echo "000")
 
@@ -1142,12 +1065,10 @@ PASS=$(cat .db_password)
 echo "Fixing Proxy Authentication (Error 571 fix)..."
 
 docker exec oracle-apex-db bash -c "sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << EOF
--- Grant proxy authentication
 ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 
--- Verify
 SELECT PROXY, CLIENT, AUTHENTICATION FROM DBA_PROXIES WHERE PROXY = 'ORDS_PUBLIC_USER';
 
 COMMIT;
@@ -1174,9 +1095,6 @@ SCRIPT
     log_success "Scripts created"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 23-25: Verify and Summary
-# ═══════════════════════════════════════════════════════════════════════════════
 step_23_verify() {
     log_step "Verifying Installation"
 
@@ -1215,7 +1133,6 @@ step_23_verify() {
 step_24_final_check() {
     log_step "Final Configuration Check"
 
-    # Check for 571 error in logs
     if grep -q "571\|proxy" "$LOG_DIR/ords.log" 2>/dev/null; then
         log_warning "Detected proxy issue - running fix..."
         bash "$SCRIPTS_DIR/fix-proxy.sh"
@@ -1260,6 +1177,7 @@ step_25_summary() {
     echo -e "      Fix Proxy:  ${CYAN}bash $SCRIPTS_DIR/fix-proxy.sh${NC}"
     echo -e "      Logs:       ${CYAN}bash $SCRIPTS_DIR/logs.sh${NC}"
     echo -e "      Reset PW:   ${CYAN}bash $SCRIPTS_DIR/reset-apex-password.sh${NC}"
+    echo -e "      GUI:        ${CYAN}bash $SCRIPTS_DIR/launch-gui.sh${NC}"
     echo -e "${CYAN}  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${YELLOW}${BOLD}   💡 Troubleshooting:${NC}"
@@ -1276,9 +1194,227 @@ step_25_summary() {
     echo ""
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
+step_26_create_gui() {
+    log_step "Creating GUI Manager"
+
+    cat > "$SCRIPTS_DIR/launch-gui.sh" << 'GUISCRIPT'
+#!/bin/bash
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+show_message() {
+    zenity --info --title="Oracle APEX Manager" --text="$1" --width=400
+}
+
+show_error() {
+    zenity --error --title="Oracle APEX Manager" --text="$1" --width=400
+}
+
+check_status() {
+    DB_STATUS=$(docker inspect -f '{{.State.Running}}' oracle-apex-db 2>/dev/null)
+    ORDS_PID=$(pgrep -f "ords")
+    
+    if [ "$DB_STATUS" = "true" ] && [ -n "$ORDS_PID" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+while true; do
+    CHOICE=$(zenity --list \
+        --title="Oracle APEX Manager - KaizenixCore" \
+        --text="Select an action:" \
+        --radiolist \
+        --column="Select" --column="Action" --column="Description" \
+        TRUE "start" "Start Oracle APEX & ORDS" \
+        FALSE "stop" "Stop Oracle APEX & ORDS" \
+        FALSE "status" "Check Status" \
+        FALSE "open-admin" "Open Admin Panel" \
+        FALSE "open-login" "Open Login Page" \
+        FALSE "fix" "Run Fix Script" \
+        FALSE "logs" "View Logs" \
+        FALSE "exit" "Exit" \
+        --width=500 --height=400)
+    
+    case $CHOICE in
+        start)
+            (
+                echo "10" ; echo "# Starting Database..."
+                docker start oracle-apex-db
+                sleep 5
+                
+                echo "50" ; echo "# Starting ORDS..."
+                cd ~/oracle-apex-complete
+                ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f | head -1)
+                export ORDS_CONFIG=~/oracle-apex-complete/ords_config
+                nohup "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config serve --port 8080 --apex-images ~/oracle-apex-complete/images > ~/oracle-apex-complete/logs/ords.log 2>&1 &
+                sleep 10
+                
+                echo "100" ; echo "# Done!"
+            ) | zenity --progress --title="Starting Oracle APEX" --text="Please wait..." --percentage=0 --auto-close
+            
+            if check_status; then
+                show_message "Oracle APEX started successfully!\n\nAdmin Panel: http://localhost:8080/ords/apex_admin"
+            else
+                show_error "Failed to start Oracle APEX!"
+            fi
+            ;;
+            
+        stop)
+            (
+                echo "50" ; echo "# Stopping ORDS..."
+                pkill -f ords
+                sleep 3
+                
+                echo "100" ; echo "# Stopping Database..."
+                docker stop oracle-apex-db
+            ) | zenity --progress --title="Stopping Oracle APEX" --text="Please wait..." --percentage=0 --auto-close
+            
+            show_message "Oracle APEX stopped successfully!"
+            ;;
+            
+        status)
+            if check_status; then
+                DB_STATUS="🟢 Running"
+                ORDS_STATUS="🟢 Running"
+                STATUS_MSG="Oracle APEX is running!\n\nDatabase: $DB_STATUS\nORDS: $ORDS_STATUS\n\nAdmin Panel: http://localhost:8080/ords/apex_admin"
+            else
+                DB_STATUS="🔴 Stopped"
+                ORDS_STATUS="🔴 Stopped"
+                STATUS_MSG="Oracle APEX is not running!\n\nDatabase: $DB_STATUS\nORDS: $ORDS_STATUS"
+            fi
+            show_message "$STATUS_MSG"
+            ;;
+            
+        open-admin)
+            if check_status; then
+                xdg-open "http://localhost:8080/ords/apex_admin" &
+            else
+                show_error "Oracle APEX is not running!\nPlease start it first."
+            fi
+            ;;
+            
+        open-login)
+            if check_status; then
+                xdg-open "http://localhost:8080/ords/f?p=4550" &
+            else
+                show_error "Oracle APEX is not running!\nPlease start it first."
+            fi
+            ;;
+            
+        fix)
+            (
+                echo "50" ; echo "# Running fix script..."
+                bash ~/oracle-apex-complete/scripts/fix.sh
+                echo "100" ; echo "# Done!"
+            ) | zenity --progress --title="Fixing Oracle APEX" --text="Please wait..." --percentage=0 --auto-close
+            
+            show_message "Fix script completed!"
+            ;;
+            
+        logs)
+            zenity --text-info --title="ORDS Logs" --filename="$HOME/oracle-apex-complete/logs/ords.log" --width=800 --height=600
+            ;;
+            
+        exit)
+            exit 0
+            ;;
+    esac
+done
+GUISCRIPT
+
+    chmod +x "$SCRIPTS_DIR/launch-gui.sh"
+    log_success "GUI Manager created"
+}
+
+step_27_create_desktop_and_services() {
+    log_step "Creating Desktop Application & Systemd Services"
+
+    log_info "Creating desktop application..."
+    
+    mkdir -p "$HOME/.local/share/applications"
+    
+    cat > "$HOME/.local/share/applications/oracle-apex.desktop" << EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Oracle APEX Manager
+Comment=Manage Oracle APEX and ORDS - KaizenixCore Edition
+Exec=$SCRIPTS_DIR/launch-gui.sh
+Icon=$PROJECT_DIR/oracle-apex-icon.png
+Terminal=false
+Categories=Development;Database;
+Keywords=oracle;apex;ords;database;kaizenixcore;
+StartupNotify=true
+EOF
+
+    log_info "Creating application icon..."
+    if command -v convert &>/dev/null; then
+        convert -size 256x256 xc:red -pointsize 72 -fill white -gravity center -annotate +0+0 "APEX" "$PROJECT_DIR/oracle-apex-icon.png" 2>/dev/null || true
+    fi
+
+    update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
+    
+    log_success "Desktop application created"
+
+    log_info "Creating systemd services..."
+
+    cat > /tmp/oracle-apex-db.service << EOF
+[Unit]
+Description=Oracle APEX Database Container
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker start oracle-apex-db
+ExecStop=/usr/bin/docker stop oracle-apex-db
+User=$USER
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    cat > /tmp/oracle-apex-ords.service << EOF
+[Unit]
+Description=Oracle APEX ORDS Service
+After=oracle-apex-db.service docker.service
+Requires=oracle-apex-db.service
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$PROJECT_DIR
+Environment="ORDS_CONFIG=$ORDS_CONFIG_DIR"
+Environment="_JAVA_OPTIONS=-Xms512m -Xmx1024m"
+ExecStart=$(find "$PROJECT_DIR/ords" -name "ords" -type f | head -1) --config $ORDS_CONFIG_DIR serve --port 8080 --apex-images $IMAGES_DIR
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    log_info "Installing systemd services..."
+    sudo mv /tmp/oracle-apex-db.service /etc/systemd/system/ 2>/dev/null || log_warning "Could not install DB service"
+    sudo mv /tmp/oracle-apex-ords.service /etc/systemd/system/ 2>/dev/null || log_warning "Could not install ORDS service"
+    
+    sudo systemctl daemon-reload 2>/dev/null || true
+    
+    log_info "Systemd services created (not enabled by default)"
+    log_info "To enable auto-start on boot, run:"
+    echo -e "  ${CYAN}sudo systemctl enable oracle-apex-db.service${NC}"
+    echo -e "  ${CYAN}sudo systemctl enable oracle-apex-ords.service${NC}"
+
+    log_success "Desktop application and services created"
+}
+
 main() {
     print_banner
     get_passwords
@@ -1308,6 +1444,21 @@ main() {
     step_23_verify
     step_24_final_check
     step_25_summary
+    step_26_create_gui
+    step_27_create_desktop_and_services
+    
+    echo ""
+    echo -e "${GREEN}${BOLD}  ╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}${BOLD}  ║                                                                   ║${NC}"
+    echo -e "${GREEN}${BOLD}  ║           🎉 ALL COMPONENTS INSTALLED SUCCESSFULLY! 🎉           ║${NC}"
+    echo -e "${GREEN}${BOLD}  ║                                                                   ║${NC}"
+    echo -e "${GREEN}${BOLD}  ╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${CYAN}  💡 You can now:${NC}"
+    echo -e "     1. Find ${WHITE}Oracle APEX Manager${NC} in your applications menu"
+    echo -e "     2. Run: ${CYAN}bash $SCRIPTS_DIR/launch-gui.sh${NC}"
+    echo -e "     3. Enable auto-start: ${CYAN}sudo systemctl enable oracle-apex-db.service oracle-apex-ords.service${NC}"
+    echo ""
 }
 
 main "$@"
