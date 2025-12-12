@@ -11,15 +11,15 @@
 
 <h3>
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Gear.png" width="20"/>
-  Automated • Secure • Docker-Based • Production Ready
+  Automated • GUI Manager • Docker-Based • Systemd Integrated
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Gear.png" width="20"/>
 </h3>
 
-<p><i>KaizenixCore Edition v1.0.0</i></p>
+<p><i>KaizenixCore Edition v2.0.0</i></p>
 
 <!-- BADGES -->
 <p>
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-2.0.0-blue?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
   <img src="https://img.shields.io/badge/Status-Stable-success?style=for-the-badge" alt="Status"/>
 </p>
@@ -28,7 +28,7 @@
   <img src="https://img.shields.io/badge/Bash-Script-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Bash"/>
   <img src="https://img.shields.io/badge/Docker-Required-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
   <img src="https://img.shields.io/badge/Oracle-APEX-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="APEX"/>
-  <img src="https://img.shields.io/badge/ORDS-25.1-orange?style=for-the-badge" alt="ORDS"/>
+  <img src="https://img.shields.io/badge/ORDS-Latest-orange?style=for-the-badge" alt="ORDS"/>
 </p>
 
 <br>
@@ -74,9 +74,9 @@
 
 <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Light%20Bulb.png" width="25" align="left"/>
 
-**Oracle APEX Ultimate Installer** is a state-of-the-art Bash script designed to fully automate the deployment of **Oracle APEX**, **ORDS**, and **Oracle Database XE 21c**.
+**Oracle APEX Ultimate Installer v2.0** is a state-of-the-art Bash script designed to fully automate the deployment of **Oracle APEX**, **ORDS**, and **Oracle Database XE 21c**.
 
-Using Docker, it creates a pristine, isolated environment and automatically handles complex configurations like **Error 571** patches and **Proxy Authentication** — saving you hours of manual setup!
+Now featuring a **Native GUI Manager**, **Desktop Application integration**, and **Systemd Service auto-start**. Using Docker, it creates a pristine, isolated environment and automatically handles complex configurations like **Error 571** patches and **Proxy Authentication** — saving you hours of manual setup!
 
 <br>
 
@@ -85,10 +85,10 @@ Using Docker, it creates a pristine, isolated environment and automatically hand
 This is an **intelligent automation solution** that transforms a complex, multi-hour Oracle APEX installation process into a simple, automated workflow. Think of it as your personal DevOps engineer that:
 
 - **Understands Your System**: Automatically detects your Linux distribution and adapts accordingly
-- **Handles Dependencies**: Installs and configures Docker, Java, and all required tools
+- **Handles Dependencies**: Installs Docker, Java, Zenity, and all required tools
 - **Deploys Everything**: Sets up Oracle Database XE 21c, APEX, and ORDS in perfect harmony
-- **Fixes Common Issues**: Automatically patches known errors (571, 404, proxy authentication)
-- **Provides Management Tools**: Creates helper scripts for easy day-to-day operations
+- **Native GUI Manager**: Provides a modern, multi-language graphical interface for management
+- **System Integration**: Creates Desktop Shortcuts and Systemd services for auto-start on boot
 
 <br>
 
@@ -99,13 +99,13 @@ This is an **intelligent automation solution** that transforms a complex, multi-
 | Phase | What Happens | Why It Matters |
 |:---:|:---|:---|
 | **🔍 Pre-Flight** | System validation and compatibility checks | Ensures your system can run Oracle APEX |
-| **📦 Dependencies** | Installs Docker, Java, curl, wget, unzip | Prepares your environment automatically |
+| **📦 Dependencies** | Installs Docker, Java, Zenity, curl, wget | Prepares your environment automatically |
 | **🐳 Containerization** | Creates isolated Docker environment | Clean setup, no conflicts with existing software |
 | **🗄️ Database Setup** | Deploys Oracle Database XE 21c | Production-grade database in minutes |
 | **🌐 APEX Installation** | Installs Oracle Application Express | Low-code development platform ready |
 | **⚡ ORDS Configuration** | Sets up Oracle REST Data Services | Web interface and REST APIs enabled |
+| **🖥️ GUI & Integration** | Creates Desktop App & Systemd Services | Native application experience |
 | **🔧 Auto-Fixing** | Applies security patches and fixes | Prevents common installation errors |
-| **📊 Verification** | Tests all components and generates report | Confirms everything works perfectly |
 
 </div>
 
@@ -123,20 +123,20 @@ This is an **intelligent automation solution** that transforms a complex, multi-
 - Requires **deep Oracle knowledge**
 - Complex **dependency management**
 - Prone to **configuration errors**
-- **No automated fixes** for common issues
-- **Manual troubleshooting** required
+- **No GUI** or management tools
+- **Manual service configuration** required
 - Risk of **system conflicts**
-- No **management utilities** included
+- No **automated fixes** included
 
 </td>
 <td width="50%" valign="top">
 
-#### ✅ Oracle APEX Ultimate Installer
+#### ✅ Oracle APEX Ultimate Installer v2
 
 - Completes in **10-15 minutes** automatically
-- **No prior experience** needed
-- **All dependencies** handled automatically
-- **Pre-configured** best practices
+- **Native GUI Manager** included
+- **Desktop Shortcut** (Like a real app)
+- **Auto-Start** on boot (Systemd)
 - **Auto-fixes** common errors (571, 404)
 - **Built-in diagnostics** and repair tools
 - **Isolated Docker** environment
@@ -158,43 +158,36 @@ The installer follows a smart, battle-tested process in **7 phases**:
 - Detect Linux distribution (Ubuntu/Debian/Fedora/openSUSE/etc)
 - Check system resources (RAM, disk space, CPU)
 - Verify internet connectivity
-- Validate user permissions
 
 **PHASE 2: DEPENDENCY INSTALLATION**
-- Install Docker Engine
+- Install Docker Engine & Compose
 - Install Java (OpenJDK 17)
-- Install system utilities (curl, wget, unzip)
+- Install **Zenity** (For GUI)
 - Configure Docker permissions
 
 **PHASE 3: DOCKER ENVIRONMENT**
 - Pull Oracle Database XE 21c image
-- Create Docker network
-- Set up persistent volumes
+- Create Docker network & Persistent volumes
 - Configure port mappings (1521, 8080)
 
 **PHASE 4: DATABASE DEPLOYMENT**
 - Start Oracle Database container
 - Wait for database initialization
 - Create database users and schemas
-- Configure security and permissions
 
-**PHASE 5: APEX INSTALLATION**
-- Download Oracle APEX (latest version)
-- Extract and prepare files
-- Install APEX schemas in database
-- Create INTERNAL workspace
-- Set up ADMIN user with secure password
+**PHASE 5: APEX & ORDS INSTALLATION**
+- Download & Extract APEX/ORDS (Latest)
+- Install APEX schemas & Configure REST
+- Configure connection pools & Proxy Authentication
+- Apply **Error 571 Fix** automatically
 
-**PHASE 6: ORDS CONFIGURATION**
-- Download Oracle REST Data Services
-- Configure connection pools
-- Enable REST APIs
-- Apply Error 571 fix
-- Configure proxy authentication
-- Start ORDS on port 8080
+**PHASE 6: POST-INSTALLATION**
+- Create management scripts
+- Generate **Native GUI Manager** (`launch-gui.sh`)
+- Create **Systemd Services** (`oracle-apex-db` & `oracle-apex-ords`)
+- Generate **Desktop Entry** (`.desktop` file)
 
-**PHASE 7: POST-INSTALLATION**
-- Create management scripts (start/stop/status/fix/logs)
+**PHASE 7: VERIFICATION**
 - Run system health checks
 - Generate installation report
 - Display access credentials and URLs
@@ -212,9 +205,9 @@ After installation completes, you'll have:
 | **🗄️ Oracle Database XE 21c** | Enterprise-grade database | Port 1521 |
 | **🌐 Oracle APEX** | Low-code development platform | Web interface |
 | **⚡ Oracle ORDS** | REST Data Services | Port 8080 |
+| **🖥️ GUI Manager** | Native graphical management tool | Desktop Menu |
+| **🚀 Auto-Start Services** | Systemd integration | Boot time |
 | **🛠️ Management Scripts** | Start, stop, status, fix, logs | Scripts folder |
-| **📊 Admin Dashboard** | Full APEX administration | Web interface |
-| **🔐 Secure Configuration** | Best practices applied | Password-protected |
 
 </div>
 
@@ -226,9 +219,9 @@ After installation completes, you'll have:
 <table>
   <tr>
     <td align="center" width="25%">
-      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Package.png" width="50"/><br><br>
-      <b>🐳 Docker Isolated</b><br>
-      <sub>Clean & Safe Environment</sub>
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Desktop%20Computer.png" width="50"/><br><br>
+      <b>🖥️ Native GUI</b><br>
+      <sub>Modern Zenity Interface</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Wrench.png" width="50"/><br><br>
@@ -241,31 +234,31 @@ After installation completes, you'll have:
       <sub>Strict Password Policies</sub>
     </td>
     <td align="center" width="25%">
-      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Desktop%20Computer.png" width="50"/><br><br>
-      <b>🐧 Multi-Distro</b><br>
-      <sub>Works on Any Linux</sub>
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Rocket.png" width="50"/><br><br>
+      <b>🚀 Auto-Start</b><br>
+      <sub>Systemd Service Integrated</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="25%">
-      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Rocket.png" width="50"/><br><br>
-      <b>⚡ Lightning Fast</b><br>
-      <sub>10-15 Minutes Setup</sub>
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Package.png" width="50"/><br><br>
+      <b>🐳 Docker Isolated</b><br>
+      <sub>Clean & Safe Environment</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Books.png" width="50"/><br><br>
       <b>📚 Multi-Language</b><br>
-      <sub>English, Persian, German</sub>
+      <sub>EN, FA, DE (GUI supported)</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Hammer%20and%20Wrench.png" width="50"/><br><br>
-      <b>🛠️ Management Tools</b><br>
-      <sub>Built-in Helper Scripts</sub>
+      <b>🛠️ Helper Tools</b><br>
+      <sub>Reset PW, Fix Proxy, Logs</sub>
     </td>
     <td align="center" width="25%">
-      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Check%20Mark%20Button.png" width="50"/><br><br>
-      <b>✅ Production Ready</b><br>
-      <sub>Battle-Tested & Stable</sub>
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Mobile%20Phone.png" width="50"/><br><br>
+      <b>📱 Desktop App</b><br>
+      <sub>App Menu Integration</sub>
     </td>
   </tr>
 </table>
@@ -300,10 +293,12 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 
 | Script | Command | Description |
 | :---: | :--- | :--- |
+| 🖥️ **GUI Manager** | `bash scripts/launch-gui.sh` | **Recommended:** Opens graphical menu |
 | 🟢 **Start** | `bash scripts/start.sh` | Starts Database and ORDS services |
 | 🔴 **Stop** | `bash scripts/stop.sh` | Stops all containers and services |
 | 📊 **Status** | `bash scripts/status.sh` | Checks health of DB and ORDS |
-| 🔧 **Fix** | `bash scripts/fix.sh` | Runs comprehensive repair tools |
+| 🔧 **Fix Proxy** | `bash scripts/fix-proxy.sh` | Fixes Error 571 / Proxy issues |
+| 🔑 **Reset PW** | `bash scripts/reset-apex-password.sh` | Resets APEX Admin password |
 | 📜 **Logs** | `bash scripts/logs.sh` | View real-time logs |
 
 </div>
@@ -314,11 +309,11 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 
 <div align="center">
 
-### 🖥️ Installation Process
+### 🖥️ Native GUI Manager
 
-| Step 1: Starting Installation | Step 2: Installing Components | Step 3: Installation Complete |
-| :---: | :---: | :---: |
-| ![Start](assets/screenshots/install-1.png) | ![Progress](assets/screenshots/install-2.png) | ![Complete](assets/screenshots/install-3.png) |
+| Main Menu | Status Check |
+| :---: | :---: |
+| ![Main Menu](assets/screenshots/gui-menu.png) | ![Status](assets/screenshots/gui-status.png) |
 
 <br>
 
@@ -341,6 +336,7 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 | **🖥️ Operating System** | Linux (Any Distro) | Ubuntu 22.04 / openSUSE |
 | **🐳 Docker** | v20.10+ | v24.0+ |
 | **☕ Java** | OpenJDK 11 | OpenJDK 17+ |
+| **🎨 GUI Lib** | Zenity | Latest |
 | **💾 RAM** | 4 GB | 8 GB+ |
 | **💿 Disk Space** | 20 GB | 50 GB+ |
 | **🌐 Network** | Internet Required | Stable Connection |
@@ -348,7 +344,6 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 </div>
 
 <br>
-
 ## ㅤ
 
 ___🚀 Quick Installation___
@@ -358,7 +353,6 @@ curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/
 ```
 ***
 <br>
-
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
@@ -425,21 +419,21 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ### Crafted with ❤️ by
 
-# [Peyman Rasouli](https://github.com/KaizenixCore)
+# [Peyman Rasouli](https://github.com/peymanrasouli)
 
 <sub>Full-Stack Developer & Open Source Enthusiast</sub>
 
 <br>
 
-<a href="https://github.com/KaizenixCore">
+<a href="https://github.com/peymanrasouli">
   <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
 </a>
 &nbsp;
-<a href="https://github.com/KaizenixCore/oracle-apex-installer/issues">
+<a href="https://github.com/peymanrasouli/oracle-apex-installer/issues">
   <img src="https://img.shields.io/badge/Report_Bug-DC3545?style=for-the-badge&logo=github&logoColor=white" alt="Bug"/>
 </a>
 &nbsp;
-<a href="https://github.com/KaizenixCore/oracle-apex-installer/discussions">
+<a href="https://github.com/peymanrasouli/oracle-apex-installer/discussions">
   <img src="https://img.shields.io/badge/Discussions-5865F2?style=for-the-badge&logo=github&logoColor=white" alt="Discussions"/>
 </a>
 &nbsp;
@@ -452,7 +446,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,12,19,24,30&height=80&section=footer"/>
 
 <sub>
-  © 2024 <b>KaizenixCore</b> • Released under the <b>MIT License</b>
+  © 2025 <b>KaizenixCore</b> • Released under the <b>MIT License</b>
   <br><br>
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Star.png" width="15"/>
   If you found this useful, please give it a star!
