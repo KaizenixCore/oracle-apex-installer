@@ -9,7 +9,7 @@
 #  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝
 #
 #  ╔═══════════════════════════════════════════════════════════════════════════╗
-#  ║        ORACLE APEX ULTIMATE INSTALLER v1.0.0 - KAIZENIXCORE               ║
+#  ║        ORACLE APEX ULTIMATE INSTALLER v2.0.0 - KAIZENIXCORE               ║
 #  ╠═══════════════════════════════════════════════════════════════════════════╣
 #  ║  Created by : Peyman Rasouli                                              ║
 #  ║  Project    : KaizenixCore                                                ║
@@ -22,13 +22,9 @@
 #  ║  ✅ Smart Dependency Detection & Auto-Installation                        ║
 #  ║  ✅ Docker-based Isolated Environment                                     ║
 #  ║  ✅ Error 571 & Proxy Authentication - FIXED                              ║
-#  ║  ✅ ORDS Install Password Handling - FIXED                                ║
-#  ║  ✅ APEX_PUBLIC_USER Proxy Permission - FIXED                             ║
-#  ║  ✅ Multi-Distribution Linux Support (Ubuntu/Debian/Fedora/openSUSE)      ║
-#  ║  ✅ One-Click Start/Stop/Fix Management Scripts                           ║
-#  ║  ✅ Comprehensive Logging & Error Handling                                ║
-#  ║  ✅ Password Validation & Security Best Practices                         ║
-#  ║  ✅ GUI Manager with Zenity Support                                       ║
+#  ║  ✅ Multi-Language GUI (English/Persian/German)                           ║
+#  ║  ✅ Modern UI/UX with Zenity                                              ║
+#  ║  ✅ One-Click Browser Launch                                              ║
 #  ║  ✅ Systemd Service Auto-Start                                            ║
 #  ║  ✅ Desktop Application (.desktop file)                                   ║
 #  ╚═══════════════════════════════════════════════════════════════════════════╝
@@ -38,7 +34,7 @@
 set -e
 trap 'handle_error $LINENO' ERR
 
-VERSION="1.0.0"
+VERSION="2.0.0"
 PROJECT_DIR="$HOME/oracle-apex-complete"
 DOWNLOADS_DIR="$PROJECT_DIR/downloads"
 LOG_DIR="$PROJECT_DIR/logs"
@@ -1195,141 +1191,407 @@ step_25_summary() {
 }
 
 step_26_create_gui() {
-    log_step "Creating GUI Manager"
+    log_step "Creating Multi-Language GUI Manager"
 
     cat > "$SCRIPTS_DIR/launch-gui.sh" << 'GUISCRIPT'
 #!/bin/bash
+################################################################################
+#  Oracle APEX Manager - Multi-Language GUI
+#  Created by: Peyman Rasouli | KaizenixCore
+#  Languages: English, فارسی, Deutsch
+################################################################################
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Prevent multiple instances
+LOCK_FILE="/tmp/oracle-apex-gui.lock"
+if [ -f "$LOCK_FILE" ]; then
+    PID=$(cat "$LOCK_FILE")
+    if kill -0 "$PID" 2>/dev/null; then
+        zenity --warning --text="Oracle APEX Manager is already running!" --width=300 2>/dev/null
+        exit 0
+    fi
+fi
+echo $$ > "$LOCK_FILE"
+trap "rm -f $LOCK_FILE" EXIT
 
-show_message() {
-    zenity --info --title="Oracle APEX Manager" --text="$1" --width=400
+# Default language
+LANG_CODE="en"
+CONFIG_FILE="$HOME/oracle-apex-complete/.gui_config"
+
+# Load saved language
+[ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LANGUAGE STRINGS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+declare -A STRINGS_EN=(
+    ["title"]="Oracle APEX Manager"
+    ["subtitle"]="KaizenixCore Edition"
+    ["select_action"]="Select an action:"
+    ["start"]="▶️  Start Services"
+    ["stop"]="⏹️  Stop Services"
+    ["status"]="📊  Check Status"
+    ["admin"]="🌐  Open Admin Panel"
+    ["login"]="🔐  Open Login Page"
+    ["fix"]="🔧  Run Fix Script"
+    ["logs"]="📜  View Logs"
+    ["settings"]="⚙️  Settings"
+    ["exit"]="❌  Exit"
+    ["starting"]="Starting Oracle APEX..."
+    ["stopping"]="Stopping Oracle APEX..."
+    ["please_wait"]="Please wait..."
+    ["success_start"]="✅ Oracle APEX started successfully!"
+    ["success_stop"]="✅ Oracle APEX stopped successfully!"
+    ["error_start"]="❌ Failed to start Oracle APEX!"
+    ["error_not_running"]="⚠️ Oracle APEX is not running!\nPlease start it first."
+    ["status_running"]="✅ Oracle APEX is RUNNING"
+    ["status_stopped"]="⚠️ Oracle APEX is STOPPED"
+    ["db_status"]="Database"
+    ["ords_status"]="ORDS"
+    ["running"]="🟢 Running"
+    ["stopped"]="🔴 Stopped"
+    ["fix_complete"]="✅ Fix script completed!"
+    ["select_language"]="Select Language"
+    ["language"]="Language"
+    ["admin_url"]="Admin Panel"
+    ["login_url"]="Login Page"
+    ["workspace"]="Workspace: INTERNAL"
+    ["username"]="Username: ADMIN"
+    ["credentials"]="Credentials"
+)
+
+declare -A STRINGS_FA=(
+    ["title"]="مدیریت اوراکل اپکس"
+    ["subtitle"]="نسخه کایزنیکس"
+    ["select_action"]="یک عملیات انتخاب کنید:"
+    ["start"]="▶️  شروع سرویس‌ها"
+    ["stop"]="⏹️  توقف سرویس‌ها"
+    ["status"]="📊  بررسی وضعیت"
+    ["admin"]="🌐  پنل مدیریت"
+    ["login"]="🔐  صفحه ورود"
+    ["fix"]="🔧  اجرای اسکریپت تعمیر"
+    ["logs"]="📜  مشاهده لاگ‌ها"
+    ["settings"]="⚙️  تنظیمات"
+    ["exit"]="❌  خروج"
+    ["starting"]="در حال شروع اوراکل اپکس..."
+    ["stopping"]="در حال توقف اوراکل اپکس..."
+    ["please_wait"]="لطفاً صبر کنید..."
+    ["success_start"]="✅ اوراکل اپکس با موفقیت شروع شد!"
+    ["success_stop"]="✅ اوراکل اپکس با موفقیت متوقف شد!"
+    ["error_start"]="❌ شروع اوراکل اپکس با خطا مواجه شد!"
+    ["error_not_running"]="⚠️ اوراکل اپکس در حال اجرا نیست!\nلطفاً ابتدا آن را شروع کنید."
+    ["status_running"]="✅ اوراکل اپکس در حال اجراست"
+    ["status_stopped"]="⚠️ اوراکل اپکس متوقف است"
+    ["db_status"]="دیتابیس"
+    ["ords_status"]="ORDS"
+    ["running"]="🟢 در حال اجرا"
+    ["stopped"]="🔴 متوقف"
+    ["fix_complete"]="✅ اسکریپت تعمیر کامل شد!"
+    ["select_language"]="انتخاب زبان"
+    ["language"]="زبان"
+    ["admin_url"]="پنل مدیریت"
+    ["login_url"]="صفحه ورود"
+    ["workspace"]="فضای کاری: INTERNAL"
+    ["username"]="نام کاربری: ADMIN"
+    ["credentials"]="اطلاعات ورود"
+)
+
+declare -A STRINGS_DE=(
+    ["title"]="Oracle APEX Manager"
+    ["subtitle"]="KaizenixCore Edition"
+    ["select_action"]="Wählen Sie eine Aktion:"
+    ["start"]="▶️  Dienste starten"
+    ["stop"]="⏹️  Dienste stoppen"
+    ["status"]="📊  Status prüfen"
+    ["admin"]="🌐  Admin-Panel öffnen"
+    ["login"]="🔐  Anmeldeseite öffnen"
+    ["fix"]="🔧  Reparaturskript ausführen"
+    ["logs"]="📜  Protokolle anzeigen"
+    ["settings"]="⚙️  Einstellungen"
+    ["exit"]="❌  Beenden"
+    ["starting"]="Oracle APEX wird gestartet..."
+    ["stopping"]="Oracle APEX wird gestoppt..."
+    ["please_wait"]="Bitte warten..."
+    ["success_start"]="✅ Oracle APEX erfolgreich gestartet!"
+    ["success_stop"]="✅ Oracle APEX erfolgreich gestoppt!"
+    ["error_start"]="❌ Oracle APEX konnte nicht gestartet werden!"
+    ["error_not_running"]="⚠️ Oracle APEX läuft nicht!\nBitte starten Sie es zuerst."
+    ["status_running"]="✅ Oracle APEX läuft"
+    ["status_stopped"]="⚠️ Oracle APEX ist gestoppt"
+    ["db_status"]="Datenbank"
+    ["ords_status"]="ORDS"
+    ["running"]="🟢 Läuft"
+    ["stopped"]="🔴 Gestoppt"
+    ["fix_complete"]="✅ Reparaturskript abgeschlossen!"
+    ["select_language"]="Sprache auswählen"
+    ["language"]="Sprache"
+    ["admin_url"]="Admin-Panel"
+    ["login_url"]="Anmeldeseite"
+    ["workspace"]="Arbeitsbereich: INTERNAL"
+    ["username"]="Benutzername: ADMIN"
+    ["credentials"]="Anmeldedaten"
+)
+
+# Get string based on current language
+get_string() {
+    local key=$1
+    case $LANG_CODE in
+        fa) echo "${STRINGS_FA[$key]}" ;;
+        de) echo "${STRINGS_DE[$key]}" ;;
+        *)  echo "${STRINGS_EN[$key]}" ;;
+    esac
 }
 
-show_error() {
-    zenity --error --title="Oracle APEX Manager" --text="$1" --width=400
-}
+# ═══════════════════════════════════════════════════════════════════════════════
+# FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
 
 check_status() {
     DB_STATUS=$(docker inspect -f '{{.State.Running}}' oracle-apex-db 2>/dev/null)
-    ORDS_PID=$(pgrep -f "ords")
-    
-    if [ "$DB_STATUS" = "true" ] && [ -n "$ORDS_PID" ]; then
-        return 0
+    ORDS_PID=$(pgrep -f "ords" | head -1)
+    [ "$DB_STATUS" = "true" ] && [ -n "$ORDS_PID" ]
+}
+
+get_status_text() {
+    if check_status; then
+        echo "$(get_string status_running)
+
+$(get_string db_status): $(get_string running)
+$(get_string ords_status): $(get_string running)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+$(get_string admin_url):
+http://localhost:8080/ords/apex_admin
+
+$(get_string login_url):
+http://localhost:8080/ords/f?p=4550
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+$(get_string credentials):
+$(get_string workspace)
+$(get_string username)"
     else
-        return 1
+        echo "$(get_string status_stopped)
+
+$(get_string db_status): $(get_string stopped)
+$(get_string ords_status): $(get_string stopped)"
     fi
 }
 
-while true; do
-    CHOICE=$(zenity --list \
-        --title="Oracle APEX Manager - KaizenixCore" \
-        --text="Select an action:" \
+start_services() {
+    (
+        echo "10"
+        echo "# $(get_string starting)"
+        docker start oracle-apex-db 2>/dev/null
+        sleep 60
+        
+        echo "60"
+        echo "# Starting ORDS..."
+        cd ~/oracle-apex-complete
+        pkill -f ords 2>/dev/null
+        sleep 2
+        
+        ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f 2>/dev/null | head -1)
+        if [ -n "$ORDS_BIN" ]; then
+            export ORDS_CONFIG=~/oracle-apex-complete/ords_config
+            nohup "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config serve --port 8080 --apex-images ~/oracle-apex-complete/images > ~/oracle-apex-complete/logs/ords.log 2>&1 &
+        fi
+        sleep 30
+        
+        echo "100"
+        echo "# Done!"
+    ) | zenity --progress \
+        --title="$(get_string title)" \
+        --text="$(get_string please_wait)" \
+        --percentage=0 \
+        --auto-close \
+        --width=400 2>/dev/null
+    
+    if check_status; then
+        zenity --info \
+            --title="$(get_string title)" \
+            --text="$(get_string success_start)\n\n🌐 http://localhost:8080/ords/apex_admin" \
+            --width=400 2>/dev/null
+        
+        # Ask to open browser
+        if zenity --question --title="$(get_string title)" --text="Open Admin Panel in browser?" --width=300 2>/dev/null; then
+            xdg-open "http://localhost:8080/ords/apex_admin" 2>/dev/null &
+        fi
+    else
+        zenity --error \
+            --title="$(get_string title)" \
+            --text="$(get_string error_start)" \
+            --width=350 2>/dev/null
+    fi
+}
+
+stop_services() {
+    (
+        echo "30"
+        echo "# $(get_string stopping)"
+        pkill -f ords 2>/dev/null
+        sleep 3
+        
+        echo "70"
+        echo "# Stopping Database..."
+        docker stop oracle-apex-db 2>/dev/null
+        
+        echo "100"
+        echo "# Done!"
+    ) | zenity --progress \
+        --title="$(get_string title)" \
+        --text="$(get_string please_wait)" \
+        --percentage=0 \
+        --auto-close \
+        --width=400 2>/dev/null
+    
+    zenity --info \
+        --title="$(get_string title)" \
+        --text="$(get_string success_stop)" \
+        --width=350 2>/dev/null
+}
+
+show_status() {
+    zenity --info \
+        --title="$(get_string title) - $(get_string status)" \
+        --text="$(get_status_text)" \
+        --width=450 2>/dev/null
+}
+
+open_admin() {
+    if check_status; then
+        xdg-open "http://localhost:8080/ords/apex_admin" 2>/dev/null &
+    else
+        zenity --error \
+            --title="$(get_string title)" \
+            --text="$(get_string error_not_running)" \
+            --width=350 2>/dev/null
+    fi
+}
+
+open_login() {
+    if check_status; then
+        xdg-open "http://localhost:8080/ords/f?p=4550" 2>/dev/null &
+    else
+        zenity --error \
+            --title="$(get_string title)" \
+            --text="$(get_string error_not_running)" \
+            --width=350 2>/dev/null
+    fi
+}
+
+run_fix() {
+    (
+        echo "20"
+        echo "# Running fix script..."
+        bash ~/oracle-apex-complete/scripts/fix.sh > /tmp/fix_output.txt 2>&1
+        echo "100"
+        echo "# Done!"
+    ) | zenity --progress \
+        --title="$(get_string title)" \
+        --text="$(get_string please_wait)" \
+        --percentage=0 \
+        --auto-close \
+        --width=400 2>/dev/null
+    
+    zenity --text-info \
+        --title="$(get_string title) - Fix Result" \
+        --filename=/tmp/fix_output.txt \
+        --width=700 \
+        --height=500 2>/dev/null
+}
+
+show_logs() {
+    if [ -f ~/oracle-apex-complete/logs/ords.log ]; then
+        zenity --text-info \
+            --title="$(get_string title) - $(get_string logs)" \
+            --filename=~/oracle-apex-complete/logs/ords.log \
+            --width=800 \
+            --height=600 2>/dev/null
+    else
+        zenity --error \
+            --title="$(get_string title)" \
+            --text="No log file found!" \
+            --width=300 2>/dev/null
+    fi
+}
+
+show_settings() {
+    NEW_LANG=$(zenity --list \
+        --title="$(get_string select_language)" \
+        --text="$(get_string select_language):" \
         --radiolist \
-        --column="Select" --column="Action" --column="Description" \
-        TRUE "start" "Start Oracle APEX & ORDS" \
-        FALSE "stop" "Stop Oracle APEX & ORDS" \
-        FALSE "status" "Check Status" \
-        FALSE "open-admin" "Open Admin Panel" \
-        FALSE "open-login" "Open Login Page" \
-        FALSE "fix" "Run Fix Script" \
-        FALSE "logs" "View Logs" \
-        FALSE "exit" "Exit" \
-        --width=500 --height=400)
+        --column="" --column="Code" --column="$(get_string language)" \
+        $([ "$LANG_CODE" = "en" ] && echo "TRUE" || echo "FALSE") "en" "🇺🇸 English" \
+        $([ "$LANG_CODE" = "fa" ] && echo "TRUE" || echo "FALSE") "fa" "🇮🇷 فارسی" \
+        $([ "$LANG_CODE" = "de" ] && echo "TRUE" || echo "FALSE") "de" "🇩🇪 Deutsch" \
+        --width=350 \
+        --height=250 2>/dev/null)
+    
+    if [ -n "$NEW_LANG" ]; then
+        LANG_CODE="$NEW_LANG"
+        echo "LANG_CODE=\"$LANG_CODE\"" > "$CONFIG_FILE"
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN MENU
+# ═══════════════════════════════════════════════════════════════════════════════
+
+show_main_menu() {
+    # Check current status for icon
+    if check_status; then
+        STATUS_ICON="🟢"
+    else
+        STATUS_ICON="🔴"
+    fi
+    
+    CHOICE=$(zenity --list \
+        --title="$(get_string title) - $(get_string subtitle)" \
+        --text="$STATUS_ICON $(get_string select_action)" \
+        --radiolist \
+        --column="" --column="Action" --column="Description" \
+        TRUE "start" "$(get_string start)" \
+        FALSE "stop" "$(get_string stop)" \
+        FALSE "status" "$(get_string status)" \
+        FALSE "admin" "$(get_string admin)" \
+        FALSE "login" "$(get_string login)" \
+        FALSE "fix" "$(get_string fix)" \
+        FALSE "logs" "$(get_string logs)" \
+        FALSE "settings" "$(get_string settings)" \
+        FALSE "exit" "$(get_string exit)" \
+        --width=500 \
+        --height=450 2>/dev/null)
+    
+    echo "$CHOICE"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN LOOP
+# ═══════════════════════════════════════════════════════════════════════════════
+
+while true; do
+    CHOICE=$(show_main_menu)
+    
+    # Exit if user closed window or pressed cancel
+    [ -z "$CHOICE" ] && exit 0
     
     case $CHOICE in
-        start)
-            (
-                echo "10" ; echo "# Starting Database..."
-                docker start oracle-apex-db
-                sleep 5
-                
-                echo "50" ; echo "# Starting ORDS..."
-                cd ~/oracle-apex-complete
-                ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f | head -1)
-                export ORDS_CONFIG=~/oracle-apex-complete/ords_config
-                nohup "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config serve --port 8080 --apex-images ~/oracle-apex-complete/images > ~/oracle-apex-complete/logs/ords.log 2>&1 &
-                sleep 10
-                
-                echo "100" ; echo "# Done!"
-            ) | zenity --progress --title="Starting Oracle APEX" --text="Please wait..." --percentage=0 --auto-close
-            
-            if check_status; then
-                show_message "Oracle APEX started successfully!\n\nAdmin Panel: http://localhost:8080/ords/apex_admin"
-            else
-                show_error "Failed to start Oracle APEX!"
-            fi
-            ;;
-            
-        stop)
-            (
-                echo "50" ; echo "# Stopping ORDS..."
-                pkill -f ords
-                sleep 3
-                
-                echo "100" ; echo "# Stopping Database..."
-                docker stop oracle-apex-db
-            ) | zenity --progress --title="Stopping Oracle APEX" --text="Please wait..." --percentage=0 --auto-close
-            
-            show_message "Oracle APEX stopped successfully!"
-            ;;
-            
-        status)
-            if check_status; then
-                DB_STATUS="🟢 Running"
-                ORDS_STATUS="🟢 Running"
-                STATUS_MSG="Oracle APEX is running!\n\nDatabase: $DB_STATUS\nORDS: $ORDS_STATUS\n\nAdmin Panel: http://localhost:8080/ords/apex_admin"
-            else
-                DB_STATUS="🔴 Stopped"
-                ORDS_STATUS="🔴 Stopped"
-                STATUS_MSG="Oracle APEX is not running!\n\nDatabase: $DB_STATUS\nORDS: $ORDS_STATUS"
-            fi
-            show_message "$STATUS_MSG"
-            ;;
-            
-        open-admin)
-            if check_status; then
-                xdg-open "http://localhost:8080/ords/apex_admin" &
-            else
-                show_error "Oracle APEX is not running!\nPlease start it first."
-            fi
-            ;;
-            
-        open-login)
-            if check_status; then
-                xdg-open "http://localhost:8080/ords/f?p=4550" &
-            else
-                show_error "Oracle APEX is not running!\nPlease start it first."
-            fi
-            ;;
-            
-        fix)
-            (
-                echo "50" ; echo "# Running fix script..."
-                bash ~/oracle-apex-complete/scripts/fix.sh
-                echo "100" ; echo "# Done!"
-            ) | zenity --progress --title="Fixing Oracle APEX" --text="Please wait..." --percentage=0 --auto-close
-            
-            show_message "Fix script completed!"
-            ;;
-            
-        logs)
-            zenity --text-info --title="ORDS Logs" --filename="$HOME/oracle-apex-complete/logs/ords.log" --width=800 --height=600
-            ;;
-            
-        exit)
-            exit 0
-            ;;
+        start)    start_services ;;
+        stop)     stop_services ;;
+        status)   show_status ;;
+        admin)    open_admin ;;
+        login)    open_login ;;
+        fix)      run_fix ;;
+        logs)     show_logs ;;
+        settings) show_settings ;;
+        exit)     exit 0 ;;
     esac
 done
 GUISCRIPT
 
     chmod +x "$SCRIPTS_DIR/launch-gui.sh"
-    log_success "GUI Manager created"
+    log_success "Multi-Language GUI Manager created"
 }
 
 step_27_create_desktop_and_services() {
@@ -1338,26 +1600,50 @@ step_27_create_desktop_and_services() {
     log_info "Creating desktop application..."
     
     mkdir -p "$HOME/.local/share/applications"
+    mkdir -p "$HOME/.local/share/icons"
+    
+    # Create SVG icon
+    cat > "$PROJECT_DIR/oracle-apex-icon.svg" << 'SVGICON'
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CC0000;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect x="20" y="20" width="216" height="216" rx="30" fill="url(#grad1)" filter="url(#shadow)"/>
+  <text x="128" y="100" font-family="Arial Black, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">APEX</text>
+  <text x="128" y="150" font-family="Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.9)" text-anchor="middle">Manager</text>
+  <text x="128" y="190" font-family="Arial, sans-serif" font-size="16" fill="rgba(255,255,255,0.7)" text-anchor="middle">KaizenixCore</text>
+</svg>
+SVGICON
+
+    cp "$PROJECT_DIR/oracle-apex-icon.svg" "$HOME/.local/share/icons/"
     
     cat > "$HOME/.local/share/applications/oracle-apex.desktop" << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=Oracle APEX Manager
+Name[fa]=مدیریت اوراکل اپکس
+Name[de]=Oracle APEX Manager
 Comment=Manage Oracle APEX and ORDS - KaizenixCore Edition
-Exec=$SCRIPTS_DIR/launch-gui.sh
-Icon=$PROJECT_DIR/oracle-apex-icon.png
+Comment[fa]=مدیریت اوراکل اپکس و ORDS - نسخه کایزنیکس
+Comment[de]=Oracle APEX und ORDS verwalten - KaizenixCore Edition
+Exec=bash $SCRIPTS_DIR/launch-gui.sh
+Icon=$HOME/.local/share/icons/oracle-apex-icon.svg
 Terminal=false
 Categories=Development;Database;
 Keywords=oracle;apex;ords;database;kaizenixcore;
 StartupNotify=true
+StartupWMClass=zenity
 EOF
 
-    log_info "Creating application icon..."
-    if command -v convert &>/dev/null; then
-        convert -size 256x256 xc:red -pointsize 72 -fill white -gravity center -annotate +0+0 "APEX" "$PROJECT_DIR/oracle-apex-icon.png" 2>/dev/null || true
-    fi
-
+    chmod +x "$HOME/.local/share/applications/oracle-apex.desktop"
     update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
     
     log_success "Desktop application created"
@@ -1381,6 +1667,8 @@ User=$USER
 WantedBy=multi-user.target
 EOF
 
+    local ORDS_BIN_PATH=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+    
     cat > /tmp/oracle-apex-ords.service << EOF
 [Unit]
 Description=Oracle APEX ORDS Service
@@ -1393,7 +1681,7 @@ User=$USER
 WorkingDirectory=$PROJECT_DIR
 Environment="ORDS_CONFIG=$ORDS_CONFIG_DIR"
 Environment="_JAVA_OPTIONS=-Xms512m -Xmx1024m"
-ExecStart=$(find "$PROJECT_DIR/ords" -name "ords" -type f | head -1) --config $ORDS_CONFIG_DIR serve --port 8080 --apex-images $IMAGES_DIR
+ExecStart=$ORDS_BIN_PATH --config $ORDS_CONFIG_DIR serve --port 8080 --apex-images $IMAGES_DIR
 Restart=always
 RestartSec=10
 
@@ -1458,6 +1746,15 @@ main() {
     echo -e "     1. Find ${WHITE}Oracle APEX Manager${NC} in your applications menu"
     echo -e "     2. Run: ${CYAN}bash $SCRIPTS_DIR/launch-gui.sh${NC}"
     echo -e "     3. Enable auto-start: ${CYAN}sudo systemctl enable oracle-apex-db.service oracle-apex-ords.service${NC}"
+    echo ""
+    echo -e "${YELLOW}  🌐 Quick Access:${NC}"
+    echo -e "     Admin Panel: ${CYAN}http://localhost:8080/ords/apex_admin${NC}"
+    echo -e "     Login Page:  ${CYAN}http://localhost:8080/ords/f?p=4550${NC}"
+    echo ""
+    echo -e "${GRAY}  ═══════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GRAY}   Created by: ${WHITE}Peyman Rasouli${NC} ${GRAY}| Project: ${MAGENTA}KaizenixCore${NC}"
+    echo -e "${GRAY}   GitHub: ${BLUE}https://github.com/KaizenixCore${NC}"
+    echo -e "${GRAY}  ═══════════════════════════════════════════════════════════════════${NC}"
     echo ""
 }
 
