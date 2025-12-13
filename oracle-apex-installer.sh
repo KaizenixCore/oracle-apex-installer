@@ -22,12 +22,13 @@
 #  ║  ✅ Smart Dependency Detection & Auto-Installation                        ║
 #  ║  ✅ Docker-based Isolated Environment                                     ║
 #  ║  ✅ Error 571 & Proxy Authentication - FIXED                              ║
-#  ║  ✅ Invalid Schema Name Error - FIXED (v2.1.0)                            ║
+#  ║  ✅ ORDS_METADATA Installation - FIXED                                    ║
 #  ║  ✅ Multi-Language GUI (English/Persian/German)                           ║
 #  ║  ✅ Modern UI/UX with Zenity                                              ║
 #  ║  ✅ One-Click Browser Launch                                              ║
 #  ║  ✅ Systemd Service Auto-Start                                            ║
 #  ║  ✅ Desktop Application (.desktop file)                                   ║
+#  ║  ✅ Persistent Configuration (survives restart/browser close)             ║
 #  ╚═══════════════════════════════════════════════════════════════════════════╝
 #
 ################################################################################
@@ -70,7 +71,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 CURRENT_STEP=0
-TOTAL_STEPS=29
+TOTAL_STEPS=28
 
 print_banner() {
     clear
@@ -86,7 +87,7 @@ print_banner() {
     echo -e "${WHITE}${BOLD}  ╔═══════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${WHITE}${BOLD}  ║${NC}      ${MAGENTA}${BOLD}ORACLE APEX ULTIMATE INSTALLER${NC} ${WHITE}v${VERSION}${NC}                    ${WHITE}${BOLD}║${NC}"
     echo -e "${WHITE}${BOLD}  ╠═══════════════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${WHITE}${BOLD}  ║${NC}  ${GREEN}✓${NC} Error 571 Fixed    ${GREEN}✓${NC} Proxy Auth Fixed    ${GREEN}✓${NC} Schema Fixed   ${WHITE}${BOLD}║${NC}"
+    echo -e "${WHITE}${BOLD}  ║${NC}  ${GREEN}✓${NC} Error 571 Fixed    ${GREEN}✓${NC} ORDS_METADATA Fixed    ${GREEN}✓${NC} Auto Install   ${WHITE}${BOLD}║${NC}"
     echo -e "${WHITE}${BOLD}  ╠═══════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${WHITE}${BOLD}  ║${NC}  ${DIM}Created by:${NC} ${CYAN}Peyman Rasouli${NC}                                    ${WHITE}${BOLD}║${NC}"
     echo -e "${WHITE}${BOLD}  ║${NC}  ${DIM}Project:${NC}    ${MAGENTA}KaizenixCore${NC}                                       ${WHITE}${BOLD}║${NC}"
@@ -233,15 +234,6 @@ test_db_connection() {
 
     log_error "Could not connect to database after $max_attempts attempts"
     return 1
-}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# HELPER FUNCTION: Get APEX Schema Name
-# ═══════════════════════════════════════════════════════════════════════════════
-get_apex_schema() {
-    local pass=${1:-$ORACLE_PASSWORD}
-    local schema=$(docker exec oracle-apex-db bash -c "echo \"SELECT USERNAME FROM ALL_USERS WHERE USERNAME LIKE 'APEX_2%' ORDER BY USERNAME DESC FETCH FIRST 1 ROW ONLY;\" | sqlplus -s sys/${pass}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep -E "^APEX_" | head -1 | tr -d ' ')
-    echo "$schema"
 }
 
 step_01_init() {
@@ -571,7 +563,7 @@ EOSQL" 2>&1 | tee "$LOG_DIR/proxy_grants.log"
 step_14_apex_admin() {
     log_step "Creating APEX Admin"
 
-    local apex_schema=$(get_apex_schema)
+    local apex_schema=$(docker exec oracle-apex-db bash -c "echo \"SELECT USERNAME FROM ALL_USERS WHERE USERNAME LIKE 'APEX_2%' ORDER BY USERNAME DESC FETCH FIRST 1 ROW ONLY;\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep -E "^APEX_" | head -1 | tr -d ' ')
 
     if [ -z "$apex_schema" ]; then
         log_error "Could not find APEX schema"
@@ -657,197 +649,95 @@ EOSQL" 2>&1 | tee "$LOG_DIR/privileges.log"
     log_success "Privileges granted"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# NEW STEP: Register APEX with ORDS in Database (Fixes Invalid Schema Name)
-# ═══════════════════════════════════════════════════════════════════════════════
-step_15b_register_apex_ords() {
-    log_step "Registering APEX with ORDS (Fixes Invalid Schema Name)"
+step_16_uninstall_old_ords() {
+    log_step "Uninstalling Old ORDS (if exists)"
 
-    local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
+    log_info "Stopping ORDS..."
+    pkill -f ords 2>/dev/null || true
+    sleep 5
+
+    log_info "Attempting ORDS uninstall from database..."
     
-    if [ -z "$apex_schema" ]; then
-        apex_schema=$(get_apex_schema)
+    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+    
+    if [ -n "$ORDS_BIN" ] && [ -d "$ORDS_CONFIG_DIR" ]; then
+        echo "${ORACLE_PASSWORD}" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" uninstall \
+            --admin-user SYS \
+            --db-hostname localhost \
+            --db-port $DB_PORT \
+            --db-servicename $DB_SERVICE \
+            --password-stdin 2>&1 | tee "$LOG_DIR/ords_uninstall.log" | grep -iE "completed|success|error|warning|uninstall" || true
     fi
 
-    log_info "Registering APEX schema: $apex_schema with ORDS..."
-
-    docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << EOSQL
+    log_info "Manually cleaning ORDS users from database..."
+    docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOSQL'
 SET SERVEROUTPUT ON
 
--- Enable ORDS for APEX schema
 BEGIN
-    ORDS.ENABLE_SCHEMA(
-        p_enabled             => TRUE,
-        p_schema              => '${apex_schema}',
-        p_url_mapping_type    => 'BASE_PATH',
-        p_url_mapping_pattern => 'apex',
-        p_auto_rest_auth      => FALSE
-    );
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('APEX schema enabled for ORDS with path: apex');
+    EXECUTE IMMEDIATE 'DROP USER ORDS_METADATA CASCADE';
+    DBMS_OUTPUT.PUT_LINE('✅ ORDS_METADATA dropped');
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('ORDS.ENABLE_SCHEMA: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Note: ORDS_METADATA - ' || SQLERRM);
 END;
 /
 
--- Also enable for APEX_PUBLIC_USER
 BEGIN
-    ORDS.ENABLE_SCHEMA(
-        p_enabled             => TRUE,
-        p_schema              => 'APEX_PUBLIC_USER',
-        p_url_mapping_type    => 'BASE_PATH',
-        p_url_mapping_pattern => 'apex_public',
-        p_auto_rest_auth      => FALSE
-    );
-    COMMIT;
+    EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE';
+    DBMS_OUTPUT.PUT_LINE('✅ ORDS_PUBLIC_USER dropped');
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('APEX_PUBLIC_USER enable: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Note: ORDS_PUBLIC_USER - ' || SQLERRM);
 END;
 /
 
--- Verify ORDS schema mappings
-SELECT parsing_schema, pattern, status FROM user_ords_schemas;
+BEGIN
+    FOR u IN (SELECT username FROM dba_users WHERE username LIKE 'ORDS%') LOOP
+        BEGIN
+            EXECUTE IMMEDIATE 'DROP USER ' || u.username || ' CASCADE';
+            DBMS_OUTPUT.PUT_LINE('✅ Dropped ' || u.username);
+        EXCEPTION
+            WHEN OTHERS THEN
+                DBMS_OUTPUT.PUT_LINE('Note: ' || u.username || ' - ' || SQLERRM);
+        END;
+    END LOOP;
+END;
+/
+
+CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD};
+GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
+GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
+GRANT CREATE SESSION, CREATE TABLE, CREATE PROCEDURE, CREATE SEQUENCE, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO ORDS_PUBLIC_USER;
+
+ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 
 COMMIT;
 EXIT;
-EOSQL" 2>&1 | tee "$LOG_DIR/ords_apex_register.log"
+EOSQL" 2>&1 | tee "$LOG_DIR/manual_cleanup.log"
 
-    log_success "APEX registered with ORDS"
-}
-
-step_16_create_ords_config() {
-    log_step "Creating ORDS Configuration Files"
-    cd "$PROJECT_DIR"
-
-    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f | head -1)
-    [ -z "$ORDS_BIN" ] && { log_error "ORDS not found"; exit 1; }
-    chmod +x "$ORDS_BIN"
-
-    local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
-    
+    log_info "Deleting old ORDS configuration..."
     rm -rf "$ORDS_CONFIG_DIR"/* 2>/dev/null || true
     mkdir -p "$ORDS_CONFIG_DIR/databases/default"
     mkdir -p "$ORDS_CONFIG_DIR/global"
 
-    log_info "Creating pool.xml with APEX schema mapping..."
-
-    # ═══════════════════════════════════════════════════════════════════════════
-    # CRITICAL FIX: Added apex.security.administrator.roles and apex schema config
-    # ═══════════════════════════════════════════════════════════════════════════
-    cat > "$ORDS_CONFIG_DIR/databases/default/pool.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>Database Connection Pool - KaizenixCore v${VERSION} - Invalid Schema Fix</comment>
-<entry key="db.connectionType">basic</entry>
-<entry key="db.hostname">localhost</entry>
-<entry key="db.port">${DB_PORT}</entry>
-<entry key="db.servicename">${DB_SERVICE}</entry>
-<entry key="db.username">ORDS_PUBLIC_USER</entry>
-<entry key="db.password">${ORACLE_PASSWORD}</entry>
-<entry key="plsql.gateway.mode">proxied</entry>
-<entry key="feature.sdw">true</entry>
-<entry key="restEnabledSql.active">true</entry>
-<entry key="security.requestValidationFunction">wwv_flow_epg_include_modules.authorize</entry>
-<entry key="jdbc.InitialLimit">3</entry>
-<entry key="jdbc.MinLimit">1</entry>
-<entry key="jdbc.MaxLimit">10</entry>
-<entry key="jdbc.MaxConnectionReuseCount">1000</entry>
-<entry key="jdbc.MaxConnectionReuseTime">900</entry>
-<entry key="apex.security.administrator.roles">SQL Developer,RESTful Services</entry>
-<entry key="apex.security.user.roles">SQL Developer,RESTful Services</entry>
-</properties>
-EOF
-
-    log_info "Creating settings.xml..."
-
-    cat > "$ORDS_CONFIG_DIR/global/settings.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>ORDS Global Settings</comment>
-<entry key="database.api.enabled">true</entry>
-<entry key="debug.printDebugToScreen">true</entry>
-<entry key="misc.pagination.maxRows">1000</entry>
-<entry key="security.verifySSL">false</entry>
-</properties>
-EOF
-
-    cat > "$ORDS_CONFIG_DIR/settings.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>ORDS Standalone Settings</comment>
-<entry key="standalone.context.path">/ords</entry>
-<entry key="standalone.http.port">${ORDS_PORT}</entry>
-<entry key="standalone.static.context.path">/i</entry>
-<entry key="standalone.static.path">${IMAGES_DIR}</entry>
-<entry key="standalone.doc.root">${IMAGES_DIR}</entry>
-</properties>
-EOF
-
-    # ═══════════════════════════════════════════════════════════════════════════
-    # NEW: Create apex.xml for URL mapping (Critical for Invalid Schema fix)
-    # ═══════════════════════════════════════════════════════════════════════════
-    log_info "Creating apex.xml for URL mapping..."
-    
-    cat > "$ORDS_CONFIG_DIR/databases/default/apex.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>APEX URL Mapping - Fixes Invalid Schema Name Error</comment>
-<entry key="db.username">APEX_PUBLIC_USER</entry>
-<entry key="db.password">${ORACLE_PASSWORD}</entry>
-</properties>
-EOF
-
-    # ═══════════════════════════════════════════════════════════════════════════
-    # NEW: Create apex_pu.xml for APEX_PUBLIC_USER mapping
-    # ═══════════════════════════════════════════════════════════════════════════
-    log_info "Creating apex_pu.xml..."
-    
-    cat > "$ORDS_CONFIG_DIR/databases/default/apex_pu.xml" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>APEX Public User Mapping</comment>
-<entry key="db.username">APEX_PUBLIC_USER</entry>
-<entry key="db.password">${ORACLE_PASSWORD}</entry>
-</properties>
-EOF
-
-    if [ -f "$ORDS_CONFIG_DIR/databases/default/pool.xml" ]; then
-        log_success "pool.xml created"
-    else
-        log_error "Failed to create pool.xml"
-        exit 1
-    fi
-
-    if [ -f "$ORDS_CONFIG_DIR/databases/default/apex.xml" ]; then
-        log_success "apex.xml created (URL mapping fix)"
-    fi
-
-    log_success "ORDS configuration files created"
+    log_success "Old ORDS uninstalled and cleaned"
 }
 
-step_17_install_ords_db() {
-    log_step "Installing ORDS into Database"
+step_17_install_ords_metadata() {
+    log_step "Installing ORDS with Metadata Schema"
     cd "$PROJECT_DIR"
 
     local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f | head -1)
+    [ -z "$ORDS_BIN" ] && { log_error "ORDS binary not found"; exit 1; }
+    chmod +x "$ORDS_BIN"
 
     log_warning "CRITICAL: Installing ORDS schema into database..."
-    log_info "This step takes 3-7 minutes..."
-
-    export ORDS_PASSWORD="${ORACLE_PASSWORD}"
-
-    echo "${ORACLE_PASSWORD}" > "$PROJECT_DIR/.ords_pwd"
-    chmod 600 "$PROJECT_DIR/.ords_pwd"
+    log_info "This creates ORDS_METADATA and takes 3-7 minutes..."
 
     "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
-        --admin-user sys \
+        --admin-user SYS \
         --db-hostname localhost \
         --db-port $DB_PORT \
         --db-servicename $DB_SERVICE \
@@ -855,97 +745,67 @@ step_17_install_ords_db() {
         --gateway-mode proxied \
         --gateway-user APEX_PUBLIC_USER \
         --log-folder "$LOG_DIR" \
-        --password-stdin << EOF 2>&1 | tee "$LOG_DIR/ords_install.log" | grep -iE "completed|schema|error|warning|installed|valid" || true
+        --password-stdin << EOFPASS 2>&1 | tee "$LOG_DIR/ords_metadata_install.log"
 ${ORACLE_PASSWORD}
-EOF
+${ORACLE_PASSWORD}
+${ORACLE_PASSWORD}
+EOFPASS
 
-    rm -f "$PROJECT_DIR/.ords_pwd"
-    unset ORDS_PASSWORD
+    local INSTALL_EXIT=$?
 
     sleep 10
 
-    log_success "ORDS database installation completed"
-}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# NEW STEP: Configure APEX URL Mapping in Database
-# ═══════════════════════════════════════════════════════════════════════════════
-step_17b_configure_apex_mapping() {
-    log_step "Configuring APEX URL Mapping in Database"
-
-    local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
-
-    log_info "Setting up APEX URL mappings to prevent Invalid Schema error..."
-
-    docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << EOSQL
-SET SERVEROUTPUT ON
-
--- Configure ORDS URL mappings for APEX
-BEGIN
-    -- Delete any existing mappings first
-    BEGIN
-        ORDS.DELETE_URL_MAPPING(
-            p_pattern => 'apex'
-        );
-    EXCEPTION WHEN OTHERS THEN NULL;
-    END;
-    
-    -- Create URL mapping for /ords/apex to APEX_PUBLIC_USER
-    ORDS.CREATE_URL_MAPPING(
-        p_pattern => 'apex',
-        p_type => 'BASE_PATH',
-        p_schema => 'APEX_PUBLIC_USER'
-    );
-    
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('URL mapping created: /ords/apex -> APEX_PUBLIC_USER');
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('URL Mapping: ' || SQLERRM);
-END;
-/
-
--- Enable REST for APEX_PUBLIC_USER
-BEGIN
-    ORDS.ENABLE_SCHEMA(
-        p_enabled => TRUE,
-        p_schema => 'APEX_PUBLIC_USER',
-        p_url_mapping_type => 'BASE_PATH',
-        p_url_mapping_pattern => 'apex',
-        p_auto_rest_auth => FALSE
-    );
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('APEX_PUBLIC_USER REST enabled');
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Enable schema: ' || SQLERRM);
-END;
-/
-
--- Verify mappings
-SELECT schema, url_mapping_pattern, status FROM ORDS_SCHEMAS;
-
-COMMIT;
+    log_info "Verifying ORDS_METADATA schema..."
+    local METADATA_CHECK=$(docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+SET HEADING OFF
+SET FEEDBACK OFF
+SET PAGESIZE 0
+SELECT COUNT(*) FROM DBA_USERS WHERE USERNAME='ORDS_METADATA';
 EXIT;
-EOSQL" 2>&1 | tee "$LOG_DIR/apex_url_mapping.log"
+EOF" 2>/dev/null | grep -o '[0-9]' | head -1)
 
-    log_success "APEX URL mapping configured"
+    if [ "$METADATA_CHECK" = "1" ]; then
+        log_success "✅ ORDS_METADATA schema created successfully!"
+        
+        local TABLE_COUNT=$(docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+SET HEADING OFF
+SET FEEDBACK OFF
+SET PAGESIZE 0
+SELECT COUNT(*) FROM DBA_TABLES WHERE OWNER='ORDS_METADATA';
+EXIT;
+EOF" 2>/dev/null | grep -o '[0-9]*' | head -1)
+        
+        log_info "Tables in ORDS_METADATA: $TABLE_COUNT"
+        
+        if [ "$TABLE_COUNT" -gt "10" ]; then
+            log_success "ORDS_METADATA has sufficient tables"
+        else
+            log_warning "ORDS_METADATA has only $TABLE_COUNT tables"
+        fi
+    else
+        log_error "❌ ORDS_METADATA was NOT created!"
+        log_error "Installation may have failed. Check logs:"
+        tail -50 "$LOG_DIR/ords_metadata_install.log"
+        exit 1
+    fi
+
+    log_success "ORDS metadata installation completed"
 }
 
-step_18_configure_ords_cli() {
-    log_step "Configuring ORDS via CLI"
+step_18_configure_ords() {
+    log_step "Configuring ORDS Settings"
     cd "$PROJECT_DIR"
 
     local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f | head -1)
 
-    log_info "Setting APEX images path..."
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i 2>&1 || true
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.path "$IMAGES_DIR" 2>&1 || true
+    log_info "Configuring standalone settings..."
     "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.context.path /ords 2>&1 || true
     "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.http.port $ORDS_PORT 2>&1 || true
+    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i 2>&1 || true
+    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.path "$IMAGES_DIR" 2>&1 || true
     "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.doc.root "$IMAGES_DIR" 2>&1 || true
 
-    log_success "ORDS CLI configuration done"
+    log_success "ORDS configuration completed"
 }
 
 step_19_final_unlock() {
@@ -996,17 +856,10 @@ step_20_verify_config() {
         log_info "Content preview:"
         head -15 "$ORDS_CONFIG_DIR/databases/default/pool.xml"
     else
-        log_error "pool.xml missing - recreating..."
-        step_16_create_ords_config
+        log_warning "pool.xml missing"
     fi
 
     echo ""
-
-    if [ -f "$ORDS_CONFIG_DIR/databases/default/apex.xml" ]; then
-        log_success "apex.xml exists (URL mapping)"
-    else
-        log_warning "apex.xml missing - will be created"
-    fi
 
     if [ -f "$ORDS_CONFIG_DIR/settings.xml" ]; then
         log_success "settings.xml exists"
@@ -1041,7 +894,7 @@ step_21_start_ords() {
 
     echo $! > "$PROJECT_DIR/ords.pid"
 
-    log_info "Waiting for ORDS to start (60-90 seconds)..."
+    log_info "Waiting for ORDS to start (90-120 seconds)..."
 
     local timeout=180
     local start=$(date +%s)
@@ -1075,7 +928,7 @@ step_21_start_ords() {
         echo -ne "\r  ${CYAN}⏳ Waiting... ${elapsed}s (HTTP $code)${NC}    "
     done
 
-    sleep 15
+    sleep 20
 }
 
 step_22_scripts() {
@@ -1119,29 +972,102 @@ HTTP_APEX=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/ap
 echo "APEX Admin: $HTTP_APEX"
 HTTP_F=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/ords/f?p=4550" 2>/dev/null || echo "000")
 echo "APEX Login: $HTTP_F"
-HTTP_APEX_PATH=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/ords/apex" 2>/dev/null || echo "000")
-echo "APEX Path: $HTTP_APEX_PATH"
+HTTP_PATH=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/ords/apex" 2>/dev/null || echo "000")
+echo "APEX Path: $HTTP_PATH"
 SCRIPT
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # ENHANCED fix.sh with Invalid Schema Name fix
-    # ═══════════════════════════════════════════════════════════════════════════
     cat > "$SCRIPTS_DIR/fix.sh" << 'SCRIPT'
 #!/bin/bash
+################################################################################
+#  COMPREHENSIVE FIX SCRIPT - Fixes all common ORDS/APEX issues
+################################################################################
+
 cd ~/oracle-apex-complete
 PASS=$(cat .db_password)
 APEX_SCHEMA=$(cat .apex_schema 2>/dev/null)
 
-echo "╔═══════════════════════════════════════════════════════════════════╗"
-echo "║     Running Comprehensive Fix (Including Invalid Schema Fix)      ║"
-echo "╚═══════════════════════════════════════════════════════════════════╝"
+echo "════════════════════════════════════════════════════════════"
+echo "  COMPREHENSIVE FIX - Starting..."
+echo "════════════════════════════════════════════════════════════"
 echo ""
 
+# Step 1: Stop ORDS
 echo "Step 1: Stopping ORDS..."
 pkill -f ords 2>/dev/null || true
-sleep 3
+sleep 5
 
-echo "Step 2: Fixing database accounts and proxy permissions..."
+# Step 2: Check if ORDS_METADATA exists
+echo ""
+echo "Step 2: Checking ORDS_METADATA..."
+METADATA_EXISTS=$(docker exec oracle-apex-db bash -c "echo \"SELECT COUNT(*) FROM DBA_USERS WHERE USERNAME='ORDS_METADATA';\" | sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep -o '[0-9]' | head -1)
+
+if [ "$METADATA_EXISTS" != "1" ]; then
+    echo "⚠️  ORDS_METADATA missing! Reinstalling..."
+    
+    # Uninstall old ORDS
+    echo "Cleaning old ORDS users..."
+    docker exec oracle-apex-db bash -c "sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+BEGIN
+    FOR u IN (SELECT username FROM dba_users WHERE username LIKE 'ORDS%') LOOP
+        BEGIN
+            EXECUTE IMMEDIATE 'DROP USER ' || u.username || ' CASCADE';
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
+    END LOOP;
+END;
+/
+
+CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY ${PASS};
+GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
+GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
+GRANT CREATE SESSION, CREATE TABLE, CREATE PROCEDURE, CREATE SEQUENCE, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO ORDS_PUBLIC_USER;
+
+ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+
+COMMIT;
+EXIT;
+EOF"
+
+    # Delete old config
+    rm -rf ~/oracle-apex-complete/ords_config
+    mkdir -p ~/oracle-apex-complete/ords_config
+    
+    # Reinstall ORDS
+    ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f | head -1)
+    
+    echo "Installing ORDS schema (3-5 minutes)..."
+    "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config install \
+        --admin-user SYS \
+        --db-hostname localhost \
+        --db-port 1521 \
+        --db-servicename XEPDB1 \
+        --feature-sdw true \
+        --gateway-mode proxied \
+        --gateway-user APEX_PUBLIC_USER \
+        --log-folder ~/oracle-apex-complete/logs \
+        --password-stdin << EOFPASS 2>&1 | tee ~/oracle-apex-complete/logs/fix_ords_install.log | grep -iE "completed|installed|success|error"
+${PASS}
+${PASS}
+${PASS}
+EOFPASS
+
+    # Configure standalone
+    "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config config set standalone.context.path /ords
+    "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config config set standalone.http.port 8080
+    "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config config set standalone.static.context.path /i
+    "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config config set standalone.static.path ~/oracle-apex-complete/images
+    "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config config set standalone.doc.root ~/oracle-apex-complete/images
+    
+    echo "✅ ORDS reinstalled"
+else
+    echo "✅ ORDS_METADATA exists"
+fi
+
+# Step 3: Fix database accounts and proxy
+echo ""
+echo "Step 3: Fixing database accounts and proxy permissions..."
 docker exec oracle-apex-db bash -c "sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << EOF
 ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
 ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
@@ -1152,42 +1078,23 @@ ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 
-COMMIT;
-EXIT;
-EOF"
-
-echo "Step 3: Fixing APEX URL Mapping (Invalid Schema Fix)..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << EOF
-SET SERVEROUTPUT ON
-
--- Re-enable ORDS for APEX_PUBLIC_USER
-BEGIN
-    ORDS.ENABLE_SCHEMA(
-        p_enabled => TRUE,
-        p_schema => 'APEX_PUBLIC_USER',
-        p_url_mapping_type => 'BASE_PATH',
-        p_url_mapping_pattern => 'apex',
-        p_auto_rest_auth => FALSE
-    );
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('APEX_PUBLIC_USER REST enabled with /apex path');
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Enable schema: ' || SQLERRM);
-END;
-/
+SELECT PROXY, CLIENT FROM DBA_PROXIES WHERE PROXY = 'ORDS_PUBLIC_USER';
 
 COMMIT;
 EXIT;
 EOF"
 
-echo "Step 4: Recreating pool.xml with schema fix..."
-mkdir -p ~/oracle-apex-complete/ords_config/databases/default
-cat > ~/oracle-apex-complete/ords_config/databases/default/pool.xml << EOF
+# Step 4: Verify pool.xml
+echo ""
+echo "Step 4: Verifying pool.xml..."
+if [ ! -f ~/oracle-apex-complete/ords_config/databases/default/pool.xml ]; then
+    echo "⚠️  pool.xml missing, recreating..."
+    mkdir -p ~/oracle-apex-complete/ords_config/databases/default
+    cat > ~/oracle-apex-complete/ords_config/databases/default/pool.xml << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 <properties>
-<comment>Database Connection Pool - Fixed with Schema Mapping</comment>
+<comment>Database Connection Pool - Fixed</comment>
 <entry key="db.connectionType">basic</entry>
 <entry key="db.hostname">localhost</entry>
 <entry key="db.port">1521</entry>
@@ -1201,49 +1108,43 @@ cat > ~/oracle-apex-complete/ords_config/databases/default/pool.xml << EOF
 <entry key="jdbc.InitialLimit">3</entry>
 <entry key="jdbc.MinLimit">1</entry>
 <entry key="jdbc.MaxLimit">10</entry>
-<entry key="apex.security.administrator.roles">SQL Developer,RESTful Services</entry>
-<entry key="apex.security.user.roles">SQL Developer,RESTful Services</entry>
 </properties>
 EOF
+    echo "✅ pool.xml recreated"
+else
+    echo "✅ pool.xml exists"
+fi
 
-echo "Step 5: Creating apex.xml for URL mapping..."
-cat > ~/oracle-apex-complete/ords_config/databases/default/apex.xml << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>APEX URL Mapping - Fixes Invalid Schema Name Error</comment>
-<entry key="db.username">APEX_PUBLIC_USER</entry>
-<entry key="db.password">${PASS}</entry>
-</properties>
-EOF
-echo "Step 6: Starting ORDS..."
+# Step 5: Start ORDS
+echo ""
+echo "Step 5: Starting ORDS..."
 ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f | head -1)
 export ORDS_CONFIG=~/oracle-apex-complete/ords_config
 export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
 nohup "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config serve --port 8080 --apex-images ~/oracle-apex-complete/images > ~/oracle-apex-complete/logs/ords.log 2>&1 &
 
-echo "Waiting 60s for ORDS to start..."
-sleep 60
+echo "Waiting 90s for ORDS to start..."
+sleep 90
 
+# Step 6: Test
 HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/ 2>/dev/null || echo "000")
 HTTP_APEX=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/apex_admin 2>/dev/null || echo "000")
-HTTP_APEX_PATH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/apex 2>/dev/null || echo "000")
+HTTP_LOGIN=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/ords/f?p=4550" 2>/dev/null || echo "000")
 
 echo ""
-echo "╔═══════════════════════════════════════════════════════════════════╗"
-echo "║                        Fix Completed!                             ║"
-echo "╚═══════════════════════════════════════════════════════════════════╝"
+echo "════════════════════════════════════════════════════════════"
+echo "  FIX COMPLETED!"
+echo "════════════════════════════════════════════════════════════"
 echo ""
-echo "ORDS HTTP: $HTTP"
-echo "APEX Admin: $HTTP_APEX"
-echo "APEX Path: $HTTP_APEX_PATH"
+echo "Status:"
+echo "  ORDS HTTP:    $HTTP"
+echo "  APEX Admin:   $HTTP_APEX"
+echo "  APEX Login:   $HTTP_LOGIN"
 echo ""
 echo "Try these URLs:"
 echo "   http://localhost:8080/ords/apex_admin"
 echo "   http://localhost:8080/ords/f?p=4550"
 echo ""
-echo "If you still see 'Invalid schema name', run:"
-echo "   bash ~/oracle-apex-complete/scripts/fix-schema.sh"
 SCRIPT
 
     cat > "$SCRIPTS_DIR/logs.sh" << 'SCRIPT'
@@ -1320,211 +1221,20 @@ echo "Done!"
 bash ~/oracle-apex-complete/scripts/status.sh
 SCRIPT
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # NEW SCRIPT: fix-schema.sh - Dedicated fix for Invalid Schema Name error
-    # ═══════════════════════════════════════════════════════════════════════════
-    cat > "$SCRIPTS_DIR/fix-schema.sh" << 'SCRIPT'
-#!/bin/bash
-################################################################################
-#  Fix Invalid Schema Name Error
-#  This script specifically fixes the "Invalid schema name" error in APEX
-################################################################################
-
-cd ~/oracle-apex-complete
-PASS=$(cat .db_password)
-APEX_SCHEMA=$(cat .apex_schema 2>/dev/null)
-
-echo "╔═══════════════════════════════════════════════════════════════════╗"
-echo "║           Fixing Invalid Schema Name Error                        ║"
-echo "╚═══════════════════════════════════════════════════════════════════╝"
-echo ""
-
-# Get APEX schema if not found
-if [ -z "$APEX_SCHEMA" ]; then
-    APEX_SCHEMA=$(docker exec oracle-apex-db bash -c "echo \"SELECT USERNAME FROM ALL_USERS WHERE USERNAME LIKE 'APEX_2%' ORDER BY USERNAME DESC FETCH FIRST 1 ROW ONLY;\" | sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep "^APEX_" | head -1 | tr -d ' ')
-    echo "$APEX_SCHEMA" > ~/oracle-apex-complete/.apex_schema
-fi
-
-echo "Found APEX Schema: $APEX_SCHEMA"
-echo ""
-
-echo "Step 1: Stopping ORDS..."
-pkill -f ords 2>/dev/null || true
-sleep 3
-
-echo "Step 2: Configuring ORDS schema mappings in database..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << EOF
-SET SERVEROUTPUT ON
-
--- Unlock all required users
-ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
-ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
-ALTER USER APEX_LISTENER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
-ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
-
--- Grant proxy permissions
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-
--- Enable ORDS for APEX_PUBLIC_USER with correct URL mapping
-BEGIN
-    -- First try to delete existing mapping
-    BEGIN
-        ORDS.DELETE_URL_MAPPING(p_pattern => 'apex');
-    EXCEPTION WHEN OTHERS THEN NULL;
-    END;
-    
-    -- Enable schema with URL mapping
-    ORDS.ENABLE_SCHEMA(
-        p_enabled             => TRUE,
-        p_schema              => 'APEX_PUBLIC_USER',
-        p_url_mapping_type    => 'BASE_PATH',
-        p_url_mapping_pattern => 'apex',
-        p_auto_rest_auth      => FALSE
-    );
-    
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('SUCCESS: APEX_PUBLIC_USER enabled with /apex path');
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Note: ' || SQLERRM);
-END;
-/
-
--- Also enable for the APEX schema itself
-BEGIN
-    ORDS.ENABLE_SCHEMA(
-        p_enabled             => TRUE,
-        p_schema              => '${APEX_SCHEMA}',
-        p_url_mapping_type    => 'BASE_PATH',
-        p_url_mapping_pattern => 'apex_schema',
-        p_auto_rest_auth      => FALSE
-    );
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('SUCCESS: ${APEX_SCHEMA} enabled');
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Note: ' || SQLERRM);
-END;
-/
-
--- Show current mappings
-DBMS_OUTPUT.PUT_LINE('');
-DBMS_OUTPUT.PUT_LINE('Current ORDS Schema Mappings:');
-FOR r IN (SELECT parsing_schema, pattern, status FROM user_ords_schemas) LOOP
-    DBMS_OUTPUT.PUT_LINE('  Schema: ' || r.parsing_schema || ' | Pattern: ' || r.pattern || ' | Status: ' || r.status);
-END LOOP;
-
-COMMIT;
-EXIT;
-EOF"
-
-echo ""
-echo "Step 3: Updating ORDS configuration files..."
-
-# Create/Update apex.xml
-mkdir -p ~/oracle-apex-complete/ords_config/databases/default
-
-cat > ~/oracle-apex-complete/ords_config/databases/default/apex.xml << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>APEX URL Mapping Configuration</comment>
-<entry key="db.username">APEX_PUBLIC_USER</entry>
-<entry key="db.password">${PASS}</entry>
-</properties>
-EOF
-
-# Update pool.xml with schema settings
-cat > ~/oracle-apex-complete/ords_config/databases/default/pool.xml << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<comment>Database Connection Pool - Schema Fix Applied</comment>
-<entry key="db.connectionType">basic</entry>
-<entry key="db.hostname">localhost</entry>
-<entry key="db.port">1521</entry>
-<entry key="db.servicename">XEPDB1</entry>
-<entry key="db.username">ORDS_PUBLIC_USER</entry>
-<entry key="db.password">${PASS}</entry>
-<entry key="plsql.gateway.mode">proxied</entry>
-<entry key="feature.sdw">true</entry>
-<entry key="restEnabledSql.active">true</entry>
-<entry key="security.requestValidationFunction">wwv_flow_epg_include_modules.authorize</entry>
-<entry key="jdbc.InitialLimit">3</entry>
-<entry key="jdbc.MinLimit">1</entry>
-<entry key="jdbc.MaxLimit">10</entry>
-<entry key="apex.security.administrator.roles">SQL Developer,RESTful Services</entry>
-<entry key="apex.security.user.roles">SQL Developer,RESTful Services</entry>
-</properties>
-EOF
-
-echo "Step 4: Starting ORDS..."
-ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f | head -1)
-export ORDS_CONFIG=~/oracle-apex-complete/ords_config
-export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-nohup "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config serve --port 8080 --apex-images ~/oracle-apex-complete/images > ~/oracle-apex-complete/logs/ords.log 2>&1 &
-
-echo "Waiting 60s for ORDS to fully start..."
-sleep 60
-
-echo ""
-echo "Step 5: Testing endpoints..."
-HTTP_ORDS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/ 2>/dev/null || echo "000")
-HTTP_ADMIN=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/apex_admin 2>/dev/null || echo "000")
-HTTP_LOGIN=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/ords/f?p=4550" 2>/dev/null || echo "000")
-HTTP_APEX=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/apex 2>/dev/null || echo "000")
-
-echo ""
-echo "╔═══════════════════════════════════════════════════════════════════╗"
-echo "║                     Fix Results                                   ║"
-echo "╠═══════════════════════════════════════════════════════════════════╣"
-echo "║  ORDS Root (/ords/):           HTTP $HTTP_ORDS"
-echo "║  APEX Admin (/ords/apex_admin): HTTP $HTTP_ADMIN"
-echo "║  APEX Login (/ords/f?p=4550):   HTTP $HTTP_LOGIN"
-echo "║  APEX Path (/ords/apex):        HTTP $HTTP_APEX"
-echo "╚═══════════════════════════════════════════════════════════════════╝"
-echo ""
-
-if [[ "$HTTP_ADMIN" =~ ^(200|301|302|303)$ ]]; then
-    echo "✅ SUCCESS! APEX Admin is accessible."
-    echo ""
-    echo "🌐 Access URLs:"
-    echo "   Admin Panel: http://localhost:8080/ords/apex_admin"
-    echo "   Login Page:  http://localhost:8080/ords/f?p=4550"
-    echo ""
-    echo "🔐 Credentials:"
-    echo "   Workspace: INTERNAL"
-    echo "   Username:  ADMIN"
-    echo "   Password:  (your configured password)"
-else
-    echo "⚠️  APEX Admin returned HTTP $HTTP_ADMIN"
-    echo ""
-    echo "Try these alternative URLs:"
-    echo "   http://localhost:8080/ords/f?p=4550"
-    echo "   http://localhost:8080/ords/f?p=4550:1"
-    echo ""
-    echo "Check logs for more details:"
-    echo "   tail -50 ~/oracle-apex-complete/logs/ords.log"
-fi
-SCRIPT
-
     chmod +x "$SCRIPTS_DIR"/*.sh
-    log_success "Scripts created (including fix-schema.sh)"
+    log_success "Scripts created"
 }
 
 step_23_verify() {
     log_step "Verifying Installation"
 
-    sleep 20
+    sleep 30
 
     log_info "Testing endpoints..."
 
     local ords_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$ORDS_PORT/ords/" 2>/dev/null || echo "000")
     local apex_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$ORDS_PORT/ords/apex_admin" 2>/dev/null || echo "000")
     local apex_login=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$ORDS_PORT/ords/f?p=4550" 2>/dev/null || echo "000")
-    local apex_path=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$ORDS_PORT/ords/apex" 2>/dev/null || echo "000")
 
     echo ""
     if [[ "$ords_code" =~ ^(200|301|302|303)$ ]]; then
@@ -1536,7 +1246,7 @@ step_23_verify() {
     if [[ "$apex_code" =~ ^(200|301|302|303)$ ]]; then
         log_success "APEX Admin: http://localhost:$ORDS_PORT/ords/apex_admin (HTTP $apex_code)"
     else
-        log_warning "APEX Admin: HTTP $apex_code - Run fix.sh or fix-schema.sh"
+        log_warning "APEX Admin: HTTP $apex_code - Run fix.sh if needed"
     fi
 
     if [[ "$apex_login" =~ ^(200|301|302|303)$ ]]; then
@@ -1545,10 +1255,13 @@ step_23_verify() {
         log_warning "APEX Login: HTTP $apex_login"
     fi
 
-    if [[ "$apex_path" =~ ^(200|301|302|303)$ ]]; then
-        log_success "APEX Path: http://localhost:$ORDS_PORT/ords/apex (HTTP $apex_path)"
+    echo ""
+    log_info "Checking for ORA-00942 errors in log..."
+    if grep -qi "ORA-00942\|table or view does not exist" "$LOG_DIR/ords.log" 2>/dev/null; then
+        log_warning "Found ORA-00942 errors - this usually means ORDS_METADATA is missing"
+        log_info "Run: bash $SCRIPTS_DIR/fix.sh"
     else
-        log_warning "APEX Path: HTTP $apex_path - This is normal if not configured"
+        log_success "No ORA-00942 errors found"
     fi
 
     echo ""
@@ -1559,16 +1272,9 @@ step_23_verify() {
 step_24_final_check() {
     log_step "Final Configuration Check"
 
-    # Check for common errors in logs
-    if grep -q "571\|proxy" "$LOG_DIR/ords.log" 2>/dev/null; then
-        log_warning "Detected proxy issue - running fix..."
-        bash "$SCRIPTS_DIR/fix-proxy.sh"
-        sleep 30
-    fi
-
-    if grep -qi "invalid.*schema\|schema.*not.*found" "$LOG_DIR/ords.log" 2>/dev/null; then
-        log_warning "Detected schema issue - running schema fix..."
-        bash "$SCRIPTS_DIR/fix-schema.sh"
+    if grep -q "571\|proxy\|ORA-00942" "$LOG_DIR/ords.log" 2>/dev/null; then
+        log_warning "Detected issues in log - running comprehensive fix..."
+        bash "$SCRIPTS_DIR/fix.sh"
         sleep 30
     fi
 
@@ -1603,26 +1309,22 @@ step_25_summary() {
     echo ""
     echo -e "${CYAN}  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${WHITE}${BOLD}   📜 Management Scripts:${NC}"
-    echo -e "      Start:        ${CYAN}bash $SCRIPTS_DIR/start.sh${NC}"
-    echo -e "      Stop:         ${CYAN}bash $SCRIPTS_DIR/stop.sh${NC}"
-    echo -e "      Status:       ${CYAN}bash $SCRIPTS_DIR/status.sh${NC}"
-    echo -e "      Fix All:      ${CYAN}bash $SCRIPTS_DIR/fix.sh${NC}"
-    echo -e "      Fix Schema:   ${CYAN}bash $SCRIPTS_DIR/fix-schema.sh${NC}  ${YELLOW}← NEW!${NC}"
-    echo -e "      Fix Proxy:    ${CYAN}bash $SCRIPTS_DIR/fix-proxy.sh${NC}"
-    echo -e "      Logs:         ${CYAN}bash $SCRIPTS_DIR/logs.sh${NC}"
-    echo -e "      Reset PW:     ${CYAN}bash $SCRIPTS_DIR/reset-apex-password.sh${NC}"
-    echo -e "      GUI:          ${CYAN}bash $SCRIPTS_DIR/launch-gui.sh${NC}"
+    echo -e "      Start:      ${CYAN}bash $SCRIPTS_DIR/start.sh${NC}"
+    echo -e "      Stop:       ${CYAN}bash $SCRIPTS_DIR/stop.sh${NC}"
+    echo -e "      Status:     ${CYAN}bash $SCRIPTS_DIR/status.sh${NC}"
+    echo -e "      Fix:        ${CYAN}bash $SCRIPTS_DIR/fix.sh${NC}"
+    echo -e "      Fix Proxy:  ${CYAN}bash $SCRIPTS_DIR/fix-proxy.sh${NC}"
+    echo -e "      Logs:       ${CYAN}bash $SCRIPTS_DIR/logs.sh${NC}"
+    echo -e "      Reset PW:   ${CYAN}bash $SCRIPTS_DIR/reset-apex-password.sh${NC}"
+    echo -e "      GUI:        ${CYAN}bash $SCRIPTS_DIR/launch-gui.sh${NC}"
     echo -e "${CYAN}  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "${YELLOW}${BOLD}   💡 Troubleshooting:${NC}"
-    echo -e "      ${WHITE}Invalid Schema Name error:${NC}"
-    echo -e "      ${CYAN}bash $SCRIPTS_DIR/fix-schema.sh${NC}"
+    echo -e "      If you see 'Invalid schema name' or Error 571:"
+    echo -e "      ${WHITE}bash $SCRIPTS_DIR/fix.sh${NC}"
     echo ""
-    echo -e "      ${WHITE}Error 571 or Proxy error:${NC}"
-    echo -e "      ${CYAN}bash $SCRIPTS_DIR/fix-proxy.sh${NC}"
-    echo ""
-    echo -e "      ${WHITE}Alternative URL:${NC}"
-    echo -e "      ${CYAN}http://localhost:$ORDS_PORT/ords/f?p=4550${NC}"
+    echo -e "      If you see 404 or proxy errors:"
+    echo -e "      ${WHITE}bash $SCRIPTS_DIR/fix-proxy.sh${NC}"
     echo ""
     echo -e "${GRAY}  ═══════════════════════════════════════════════════════════════════${NC}"
     echo -e "${GRAY}   Created by: ${WHITE}Peyman Rasouli${NC} ${GRAY}| Project: ${MAGENTA}KaizenixCore${NC}"
@@ -1675,7 +1377,6 @@ declare -A STRINGS_EN=(
     ["admin"]="🌐  Open Admin Panel"
     ["login"]="🔐  Open Login Page"
     ["fix"]="🔧  Run Fix Script"
-    ["fix_schema"]="🔧  Fix Schema Error"
     ["logs"]="📜  View Logs"
     ["settings"]="⚙️  Settings"
     ["exit"]="❌  Exit"
@@ -1712,7 +1413,6 @@ declare -A STRINGS_FA=(
     ["admin"]="🌐  پنل مدیریت"
     ["login"]="🔐  صفحه ورود"
     ["fix"]="🔧  اجرای اسکریپت تعمیر"
-    ["fix_schema"]="🔧  رفع خطای Schema"
     ["logs"]="📜  مشاهده لاگ‌ها"
     ["settings"]="⚙️  تنظیمات"
     ["exit"]="❌  خروج"
@@ -1749,7 +1449,6 @@ declare -A STRINGS_DE=(
     ["admin"]="🌐  Admin-Panel öffnen"
     ["login"]="🔐  Anmeldeseite öffnen"
     ["fix"]="🔧  Reparaturskript ausführen"
-    ["fix_schema"]="🔧  Schema-Fehler beheben"
     ["logs"]="📜  Protokolle anzeigen"
     ["settings"]="⚙️  Einstellungen"
     ["exit"]="❌  Beenden"
@@ -1838,7 +1537,6 @@ start_services() {
         ORDS_BIN=$(find ~/oracle-apex-complete/ords -name "ords" -type f 2>/dev/null | head -1)
         if [ -n "$ORDS_BIN" ]; then
             export ORDS_CONFIG=~/oracle-apex-complete/ords_config
-            export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
             nohup "$ORDS_BIN" --config ~/oracle-apex-complete/ords_config serve --port 8080 --apex-images ~/oracle-apex-complete/images > ~/oracle-apex-complete/logs/ords.log 2>&1 &
         fi
         sleep 30
@@ -1946,27 +1644,6 @@ run_fix() {
         --height=500 2>/dev/null
 }
 
-run_fix_schema() {
-    (
-        echo "20"
-        echo "# Running schema fix script..."
-        bash ~/oracle-apex-complete/scripts/fix-schema.sh > /tmp/fix_schema_output.txt 2>&1
-        echo "100"
-        echo "# Done!"
-    ) | zenity --progress \
-        --title="$(get_string title)" \
-        --text="$(get_string please_wait)" \
-        --percentage=0 \
-        --auto-close \
-        --width=400 2>/dev/null
-    
-    zenity --text-info \
-        --title="$(get_string title) - Schema Fix Result" \
-        --filename=/tmp/fix_schema_output.txt \
-        --width=700 \
-        --height=500 2>/dev/null
-}
-
 show_logs() {
     if [ -f ~/oracle-apex-complete/logs/ords.log ]; then
         zenity --text-info \
@@ -2001,7 +1678,7 @@ show_settings() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MAIN MENU (Updated with Fix Schema option)
+# MAIN MENU
 # ═══════════════════════════════════════════════════════════════════════════════
 
 show_main_menu() {
@@ -2023,12 +1700,11 @@ show_main_menu() {
         FALSE "admin" "$(get_string admin)" \
         FALSE "login" "$(get_string login)" \
         FALSE "fix" "$(get_string fix)" \
-        FALSE "fix_schema" "$(get_string fix_schema)" \
         FALSE "logs" "$(get_string logs)" \
         FALSE "settings" "$(get_string settings)" \
         FALSE "exit" "$(get_string exit)" \
         --width=500 \
-        --height=500 2>/dev/null)
+        --height=450 2>/dev/null)
     
     echo "$CHOICE"
 }
@@ -2044,16 +1720,15 @@ while true; do
     [ -z "$CHOICE" ] && exit 0
     
     case $CHOICE in
-        start)      start_services ;;
-        stop)       stop_services ;;
-        status)     show_status ;;
-        admin)      open_admin ;;
-        login)      open_login ;;
-        fix)        run_fix ;;
-        fix_schema) run_fix_schema ;;
-        logs)       show_logs ;;
-        settings)   show_settings ;;
-        exit)       exit 0 ;;
+        start)    start_services ;;
+        stop)     stop_services ;;
+        status)   show_status ;;
+        admin)    open_admin ;;
+        login)    open_login ;;
+        fix)      run_fix ;;
+        logs)     show_logs ;;
+        settings) show_settings ;;
+        exit)     exit 0 ;;
     esac
 done
 GUISCRIPT
@@ -2171,9 +1846,34 @@ EOF
     log_success "Desktop application and services created"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# MAIN FUNCTION
-# ═══════════════════════════════════════════════════════════════════════════════
+step_28_final_verification() {
+    log_step "Final Verification"
+
+    log_info "Checking ORDS_METADATA schema..."
+    local METADATA_EXISTS=$(docker exec oracle-apex-db bash -c "echo \"SELECT COUNT(*) FROM DBA_USERS WHERE USERNAME='ORDS_METADATA';\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep -o '[0-9]' | head -1)
+
+    if [ "$METADATA_EXISTS" = "1" ]; then
+        log_success "✅ ORDS_METADATA schema exists"
+    else
+        log_warning "⚠️  ORDS_METADATA missing - run fix.sh after installation"
+    fi
+
+    log_info "Checking proxy configuration..."
+    docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+SELECT PROXY, CLIENT FROM DBA_PROXIES WHERE PROXY = 'ORDS_PUBLIC_USER';
+EXIT;
+EOF" 2>&1 | grep -E "APEX_PUBLIC_USER|APEX_LISTENER|APEX_REST" > /dev/null && log_success "✅ Proxy configuration OK" || log_warning "⚠️  Proxy may need configuration"
+
+    log_info "Checking for common errors in log..."
+    if grep -qi "ORA-00942\|Invalid schema name\|571" "$LOG_DIR/ords.log" 2>/dev/null; then
+        log_warning "⚠️  Found potential issues in log"
+        log_info "Run: bash $SCRIPTS_DIR/fix.sh"
+    else
+        log_success "✅ No critical errors in log"
+    fi
+
+    log_success "Final verification completed"
+}
 
 main() {
     print_banner
@@ -2194,11 +1894,9 @@ main() {
     step_13_grant_proxy
     step_14_apex_admin
     step_15_privileges
-    step_15b_register_apex_ords      # NEW: Register APEX with ORDS
-    step_16_create_ords_config
-    step_17_install_ords_db
-    step_17b_configure_apex_mapping  # NEW: Configure APEX URL mapping
-    step_18_configure_ords_cli
+    step_16_uninstall_old_ords
+    step_17_install_ords_metadata
+    step_18_configure_ords
     step_19_final_unlock
     step_20_verify_config
     step_21_start_ords
@@ -2208,6 +1906,7 @@ main() {
     step_25_summary
     step_26_create_gui
     step_27_create_desktop_and_services
+    step_28_final_verification
     
     echo ""
     echo -e "${GREEN}${BOLD}  ╔═══════════════════════════════════════════════════════════════════╗${NC}"
@@ -2225,8 +1924,8 @@ main() {
     echo -e "     Admin Panel: ${CYAN}http://localhost:8080/ords/apex_admin${NC}"
     echo -e "     Login Page:  ${CYAN}http://localhost:8080/ords/f?p=4550${NC}"
     echo ""
-    echo -e "${YELLOW}  🔧 If you see 'Invalid schema name' error:${NC}"
-    echo -e "     Run: ${CYAN}bash $SCRIPTS_DIR/fix-schema.sh${NC}"
+    echo -e "${YELLOW}  🔧 If you see 'Invalid schema name':${NC}"
+    echo -e "     Run: ${CYAN}bash $SCRIPTS_DIR/fix.sh${NC}"
     echo ""
     echo -e "${GRAY}  ═══════════════════════════════════════════════════════════════════${NC}"
     echo -e "${GRAY}   Created by: ${WHITE}Peyman Rasouli${NC} ${GRAY}| Project: ${MAGENTA}KaizenixCore${NC}"
