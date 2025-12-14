@@ -669,60 +669,85 @@ step_16_uninstall_old_ords() {
             --password-stdin 2>&1 | tee "$LOG_DIR/ords_uninstall.log" | grep -iE "completed|success|error|warning|uninstall" || true
     fi
 
-    log_info "Manually cleaning ORDS users from database..."
+    log_info "Manually cleaning ALL ORDS users from database..."
     docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOSQL'
 SET SERVEROUTPUT ON
 
+-- Drop ORDS_METADATA if exists
 BEGIN
     EXECUTE IMMEDIATE 'DROP USER ORDS_METADATA CASCADE';
-    DBMS_OUTPUT.PUT_LINE('✅ ORDS_METADATA dropped');
+    DBMS_OUTPUT.PUT_LINE('Dropped ORDS_METADATA');
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Note: ORDS_METADATA - ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('ORDS_METADATA: ' || SQLERRM);
 END;
 /
 
+-- Drop ORDS_PUBLIC_USER - CRITICAL!
 BEGIN
     EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE';
-    DBMS_OUTPUT.PUT_LINE('✅ ORDS_PUBLIC_USER dropped');
+    DBMS_OUTPUT.PUT_LINE('Dropped ORDS_PUBLIC_USER');
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Note: ORDS_PUBLIC_USER - ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('ORDS_PUBLIC_USER: ' || SQLERRM);
 END;
 /
 
+-- Drop any other ORDS users (except ORDSYS which is system)
 BEGIN
-    FOR u IN (SELECT username FROM dba_users WHERE username LIKE 'ORDS%') LOOP
+    FOR u IN (SELECT username FROM dba_users WHERE username LIKE 'ORDS%' AND username != 'ORDSYS') LOOP
         BEGIN
             EXECUTE IMMEDIATE 'DROP USER ' || u.username || ' CASCADE';
-            DBMS_OUTPUT.PUT_LINE('✅ Dropped ' || u.username);
+            DBMS_OUTPUT.PUT_LINE('Dropped ' || u.username);
         EXCEPTION
             WHEN OTHERS THEN
-                DBMS_OUTPUT.PUT_LINE('Note: ' || u.username || ' - ' || SQLERRM);
+                DBMS_OUTPUT.PUT_LINE(u.username || ': ' || SQLERRM);
         END;
     END LOOP;
 END;
 /
 
-CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD};
-GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
-GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
-GRANT CREATE SESSION, CREATE TABLE, CREATE PROCEDURE, CREATE SEQUENCE, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO ORDS_PUBLIC_USER;
-
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+-- Verify ORDS_PUBLIC_USER is gone
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count FROM DBA_USERS WHERE USERNAME = 'ORDS_PUBLIC_USER';
+    IF v_count = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('VERIFIED: ORDS_PUBLIC_USER does not exist');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('WARNING: ORDS_PUBLIC_USER still exists!');
+        -- Force drop again
+        EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE';
+    END IF;
+END;
+/
 
 COMMIT;
 EXIT;
 EOSQL" 2>&1 | tee "$LOG_DIR/manual_cleanup.log"
 
+    # Double-check that ORDS_PUBLIC_USER is really gone
+    local USER_EXISTS=$(docker exec oracle-apex-db bash -c "echo \"SELECT COUNT(*) FROM DBA_USERS WHERE USERNAME='ORDS_PUBLIC_USER';\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep -o '[0-9]' | head -1)
+    
+    if [ "$USER_EXISTS" = "0" ]; then
+        log_success "ORDS_PUBLIC_USER successfully removed"
+    else
+        log_warning "ORDS_PUBLIC_USER still exists, forcing removal..."
+        docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+DROP USER ORDS_PUBLIC_USER CASCADE;
+COMMIT;
+EXIT;
+EOF" 2>&1 || true
+    fi
+
     log_info "Deleting old ORDS configuration..."
     rm -rf "$ORDS_CONFIG_DIR"/* 2>/dev/null || true
-    mkdir -p "$ORDS_CONFIG_DIR/databases/default"
-    mkdir -p "$ORDS_CONFIG_DIR/global"
+    mkdir -p "$ORDS_CONFIG_DIR"
 
-    log_success "Old ORDS uninstalled and cleaned"
+    # DO NOT create ORDS_PUBLIC_USER here!
+    # Let ords install create it
+
+    log_success "Old ORDS uninstalled and cleaned - ready for fresh install"
 }
 
 step_17_install_ords_metadata() {
@@ -733,8 +758,28 @@ step_17_install_ords_metadata() {
     [ -z "$ORDS_BIN" ] && { log_error "ORDS binary not found"; exit 1; }
     chmod +x "$ORDS_BIN"
 
+    # Final verification that ORDS_PUBLIC_USER doesn't exist
+    local USER_CHECK=$(docker exec oracle-apex-db bash -c "echo \"SELECT COUNT(*) FROM DBA_USERS WHERE USERNAME='ORDS_PUBLIC_USER';\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep -o '[0-9]' | head -1)
+    
+    if [ "$USER_CHECK" != "0" ]; then
+        log_warning "ORDS_PUBLIC_USER still exists! Removing..."
+        docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+DROP USER ORDS_PUBLIC_USER CASCADE;
+DROP USER ORDS_METADATA CASCADE;
+COMMIT;
+EXIT;
+EOF" 2>&1 || true
+        sleep 3
+    fi
+
     log_warning "CRITICAL: Installing ORDS schema into database..."
-    log_info "This creates ORDS_METADATA and takes 3-7 minutes..."
+    log_info "This creates ORDS_METADATA and ORDS_PUBLIC_USER (3-7 minutes)..."
+
+    # Create password file for non-interactive install
+    local PASS_FILE=$(mktemp)
+    echo "${ORACLE_PASSWORD}" > "$PASS_FILE"
+    echo "${ORACLE_PASSWORD}" >> "$PASS_FILE"
+    echo "${ORACLE_PASSWORD}" >> "$PASS_FILE"
 
     "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
         --admin-user SYS \
@@ -745,13 +790,10 @@ step_17_install_ords_metadata() {
         --gateway-mode proxied \
         --gateway-user APEX_PUBLIC_USER \
         --log-folder "$LOG_DIR" \
-        --password-stdin << EOFPASS 2>&1 | tee "$LOG_DIR/ords_metadata_install.log"
-${ORACLE_PASSWORD}
-${ORACLE_PASSWORD}
-${ORACLE_PASSWORD}
-EOFPASS
+        --password-stdin < "$PASS_FILE" 2>&1 | tee "$LOG_DIR/ords_metadata_install.log"
 
     local INSTALL_EXIT=$?
+    rm -f "$PASS_FILE"
 
     sleep 10
 
@@ -777,19 +819,57 @@ EOF" 2>/dev/null | grep -o '[0-9]*' | head -1)
         
         log_info "Tables in ORDS_METADATA: $TABLE_COUNT"
         
-        if [ "$TABLE_COUNT" -gt "10" ]; then
-            log_success "ORDS_METADATA has sufficient tables"
-        else
-            log_warning "ORDS_METADATA has only $TABLE_COUNT tables"
-        fi
+        # Grant proxy permissions now that users exist
+        log_info "Granting proxy permissions..."
+        docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+COMMIT;
+EXIT;
+EOF" 2>&1 || true
+        
+        log_success "ORDS metadata installation completed"
     else
         log_error "❌ ORDS_METADATA was NOT created!"
-        log_error "Installation may have failed. Check logs:"
-        tail -50 "$LOG_DIR/ords_metadata_install.log"
-        exit 1
-    fi
+        log_info "Checking install log for errors..."
+        grep -iE "error|failed|exception" "$LOG_DIR/ords_metadata_install.log" | tail -10
+        
+        log_warning "Attempting alternative installation method..."
+        
+        # Alternative: Try with explicit schema creation
+        docker exec oracle-apex-db bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba << 'EOF'
+-- Create ORDS_PUBLIC_USER manually if needed
+CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD};
+GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
+GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
+ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
+COMMIT;
+EXIT;
+EOF" 2>&1 || true
 
-    log_success "ORDS metadata installation completed"
+        # Retry install
+        log_info "Retrying ORDS install..."
+        echo "${ORACLE_PASSWORD}" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
+            --admin-user SYS \
+            --db-hostname localhost \
+            --db-port $DB_PORT \
+            --db-servicename $DB_SERVICE \
+            --feature-sdw true \
+            --gateway-mode proxied \
+            --gateway-user APEX_PUBLIC_USER \
+            --log-folder "$LOG_DIR" \
+            --password-stdin 2>&1 | tee "$LOG_DIR/ords_metadata_install_retry.log" || true
+
+        # Final check
+        METADATA_CHECK=$(docker exec oracle-apex-db bash -c "echo \"SELECT COUNT(*) FROM DBA_USERS WHERE USERNAME='ORDS_METADATA';\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:1521/XEPDB1 as sysdba" 2>/dev/null | grep -o '[0-9]' | head -1)
+        
+        if [ "$METADATA_CHECK" = "1" ]; then
+            log_success "✅ ORDS_METADATA created on retry!"
+        else
+            log_warning "⚠️  ORDS_METADATA not created - will use fix.sh after installation"
+        fi
+    fi
 }
 
 step_18_configure_ords() {
@@ -1935,3 +2015,4 @@ main() {
 }
 
 main "$@"
+    
