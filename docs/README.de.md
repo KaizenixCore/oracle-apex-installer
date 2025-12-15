@@ -1,35 +1,53 @@
 <div align="center">
 
 <!-- ANIMATED HEADER -->
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" width="100" alt="Rocket"/>
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Glowing%20Star.png" width="60" alt="Star"/>
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" width="100" alt="Rocket"/>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" width="100" alt="Rakete"/>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Glowing%20Star.png" width="60" alt="Stern"/>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" width="100" alt="Rakete"/>
 
 <br><br>
 
-# 🚀 Oracle APEX Ultimate Installer
+# 🚀 Der ultimative Oracle APEX Installer
 
 <h3>
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Gear.png" width="20"/>
-  Automatisiert • Grafischer Manager • Docker-basiert • Systemd-integriert
+  Automatisiert • Grafische Verwaltung • Docker-basiert • Systemd-integriert
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Gear.png" width="20"/>
 </h3>
 
-<p><i>KaizenixCore Edition v2.0.0</i></p>
+<p><i>KaizenixCore Edition v2.4.0</i></p>
 
 <!-- BADGES -->
 <p>
-  <img src="https://img.shields.io/badge/Version-2.0.0-blue?style=for-the-badge" alt="Version"/>
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
-  <img src="https://img.shields.io/badge/Status-Stable-success?style=for-the-badge" alt="Status"/>
+  <img src="https://img.shields.io/badge/Version-2.4.0-blue?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Lizenz-MIT-green?style=for-the-badge" alt="Lizenz"/>
+  <img src="https://img.shields.io/badge/Status-Stabil-success?style=for-the-badge" alt="Status"/>
 </p>
 
 <p>
-  <img src="https://img.shields.io/badge/Bash-Script-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Bash"/>
-  <img src="https://img.shields.io/badge/Docker-Required-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
+  <img src="https://img.shields.io/badge/Bash-Skript-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Bash"/>
+  <img src="https://img.shields.io/badge/Docker-Erforderlich-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
   <img src="https://img.shields.io/badge/Oracle-APEX-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="APEX"/>
-  <img src="https://img.shields.io/badge/ORDS-Latest-orange?style=for-the-badge" alt="ORDS"/>
+  <img src="https://img.shields.io/badge/ORDS-Neueste-orange?style=for-the-badge" alt="ORDS"/>
 </p>
+
+<br>
+
+<!-- NEW IN v2.4.0 BANNER -->
+<table>
+<tr>
+<td>
+
+### 🎉 Neu in Version 2.4.0
+
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **GUI-Absturz behoben** - Schließt nicht mehr unerwartet!<br>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **Intelligente Auto-Wiederherstellung** - Schemas überleben Systemneustart<br>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **Fehler 500/574 behoben** - Datenbank-Anmeldungsprobleme gelöst<br>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **Invalid Schema behoben** - Kein "Schema nicht gefunden" mehr nach Neustart
+
+</td>
+</tr>
+</table>
 
 <br>
 
@@ -39,19 +57,19 @@
 <table>
   <tr>
     <td align="center" style="padding: 20px;">
-      <a href="../README.md">
+      <a href="../README.md#-english-documentation">
         <img src="https://flagcdn.com/w80/gb.png" width="60" style="border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"/><br><br>
         <b>🇬🇧 English</b>
       </a>
     </td>
     <td align="center" style="padding: 20px;">
-      <a href="../docs/README.fa.md">
+      <a href="README.fa.md">
         <img src="https://flagcdn.com/w80/ir.png" width="60" style="border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"/><br><br>
         <b>🇮🇷 فارسی</b>
       </a>
     </td>
     <td align="center" style="padding: 20px;">
-      <a href="#">
+      <a href="#-deutsche-dokumentation">
         <img src="https://flagcdn.com/w80/de.png" width="60" style="border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"/><br><br>
         <b>🇩🇪 Deutsch</b>
       </a>
@@ -68,44 +86,69 @@
 <br>
 
 <!-- GERMAN DOCUMENTATION -->
-<div>
+<div id="-deutsche-dokumentation"></div>
 
 ## 📖 Über das Projekt
 
 <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Light%20Bulb.png" width="25" align="left"/>
 
-**Oracle APEX Ultimate Installer v2.0** ist ein fortschrittliches Bash-Skript, das entwickelt wurde, um die Installation und Bereitstellung von **Oracle APEX**, **ORDS** und **Oracle Database XE 21c** vollständig zu automatisieren.
+**Der ultimative Oracle APEX Installer v2.4.0** ist ein fortschrittliches Bash-Skript, das für die vollautomatische Installation von **Oracle APEX**, **ORDS** und **Oracle Database XE 21c** entwickelt wurde.
 
-Diese Version verfügt nun über einen **grafischen Manager (GUI)**, **Desktop-Integration** und **automatischen Start von Diensten (Systemd)**. Unter Verwendung von Docker erstellt dieses Tool eine saubere, isolierte Umgebung und verwaltet automatisch komplexe Konfigurationen wie **Fehler 571-Patches** und **Proxy-Authentifizierung** — und spart Ihnen Stunden an Zeit!
+Diese Version enthält **native grafische Verwaltung**, **Desktop-Anwendungsintegration**, **automatischen Start mit Systemd** und **intelligente automatische Wiederherstellung**, die Ihre Schemas nach einem Systemneustart erhält. Mit Docker wird eine isolierte und saubere Umgebung erstellt und komplexe Konfigurationen wie **Fehler 571**, **Fehler 574**, **Fehler 500** und **Proxy-Authentifizierung** werden automatisch verwaltet — das spart Ihnen stundenlange manuelle Arbeit!
+
+<br>
+
+### 🆕 Änderungen in Version 2.4.0
+
+<div align="center">
+
+| Kategorie | Änderung | Beschreibung |
+|:---:|:---|:---|
+| 🐛 **Bugfix** | GUI-Absturz behoben | GUI schließt sich nach Aktionen nicht mehr |
+| 🐛 **Bugfix** | Fehler 500 behoben | Internal Server Error gelöst |
+| 🐛 **Bugfix** | Fehler 574 behoben | Database Credential Error gelöst |
+| 🐛 **Bugfix** | Fehler 571 behoben | Proxy Authentication Error gelöst |
+| 🐛 **Bugfix** | Invalid Schema behoben | "Schema nicht gefunden" nach Browser-Refresh gelöst |
+| ✨ **Neue Funktion** | Intelligente Auto-Wiederherstellung | Stellt Proxy-Grants nach Neustart automatisch wieder her |
+| ✨ **Neue Funktion** | Lock-File-System | Verhindert mehrfache GUI-Instanzen |
+| ✨ **Neue Funktion** | Verbessertes Fix-Skript | Umfassende Behebung aller bekannten Probleme |
+| 🔧 **Verbesserung** | Systemd-Dienste | Auto-Wiederherstellung in Boot-Dienste integriert |
+| 🔧 **Verbesserung** | Start-Skript | Enthält jetzt automatische Schema-Wiederherstellung |
+| 🔧 **Verbesserung** | GUI-Stabilität | Hauptmenü-Schleife hält GUI aktiv |
+| 📚 **Dokumentation** | Vollständige Sprachunterstützung | Komplette EN/FA/DE-Übersetzungen in GUI |
+
+</div>
 
 <br>
 
 ### 🎯 Was ist dieser Installer?
 
-Dies ist eine **intelligente Automatisierungslösung**, die einen komplexen, mehrstündigen Oracle APEX-Installationsprozess in einen einfachen, automatisierten Workflow verwandelt. Betrachten Sie ihn als Ihren persönlichen DevOps-Ingenieur, der:
+Dies ist eine **intelligente Automatisierungslösung**, die den komplexen, mehrstündigen Oracle APEX-Installationsprozess in einen einfachen, automatisierten Workflow verwandelt. Betrachten Sie ihn als Ihren persönlichen DevOps-Ingenieur, der:
 
-- **Ihr System versteht**: Automatisch Ihre Linux-Distribution erkennt und sich entsprechend anpasst.
-- **Abhängigkeiten verwaltet**: Docker, Java, Zenity und alle erforderlichen Tools installiert.
-- **Alles bereitstellt**: Oracle Database XE 21c, APEX und ORDS in perfekter Harmonie einrichtet.
-- **Nativer GUI-Manager**: Eine moderne, mehrsprachige grafische Oberfläche zur Verwaltung bietet.
-- **Systemintegration**: Desktop-Verknüpfungen und Systemd-Dienste für den automatischen Start beim Booten erstellt.
+- **Ihr System versteht**: Erkennt automatisch Ihre Linux-Distribution und passt sich entsprechend an
+- **Abhängigkeiten verwaltet**: Installiert Docker, Java, Zenity und alle erforderlichen Tools
+- **Alles bereitstellt**: Richtet Oracle Database XE 21c, APEX und ORDS in perfekter Harmonie ein
+- **Native grafische Verwaltung**: Bietet eine moderne, mehrsprachige grafische Oberfläche für die Verwaltung
+- **Systemintegration**: Erstellt Desktop-Verknüpfungen und Systemd-Dienste für automatischen Start
+- **Intelligente Wiederherstellung**: Behebt automatisch Schema- und Proxy-Probleme nach Systemneustart *(Neu in v2.4.0)*
 
 <br>
 
-### 🔧 Was macht er?
+### 🔧 Was macht dieser Installer?
 
 <div align="center">
 
-| Phase | Was passiert | Warum wichtig |
+| Phase | Was passiert | Warum es wichtig ist |
 |:---:|:---|:---|
-| **🔍 Vorabprüfung** | Systemvalidierung und Kompatibilitätsprüfung | Stellt sicher, dass das System Oracle APEX ausführen kann |
+| **🔍 Vorabprüfung** | Systemvalidierung und Kompatibilitätsprüfung | Stellt sicher, dass Ihr System Oracle APEX ausführen kann |
 | **📦 Abhängigkeiten** | Installation von Docker, Java, Zenity, curl, wget | Automatische Vorbereitung Ihrer Umgebung |
-| **🐳 Container** | Erstellung einer isolierten Docker-Umgebung | Saubere Installation, keine Konflikte mit vorhandener Software |
-| **🗄️ Datenbank-Setup** | Bereitstellung von Oracle Database XE 21c | Datenbank auf Unternehmensniveau in wenigen Minuten |
-| **🌐 APEX-Installation** | Installation von Oracle Application Express | Low-Code-Entwicklungsplattform einsatzbereit |
-| **⚡ ORDS-Konfiguration** | Einrichtung von Oracle REST Data Services | Aktivierung von Web-Interface und REST-APIs |
-| **🖥️ GUI & Integration** | Erstellung von Desktop-App & Systemd-Diensten | Natives Software-Erlebnis |
-| **🔧 Auto-Fix** | Anwendung von Sicherheitspatches & Fixes | Verhinderung häufiger Installationsfehler |
+| **🐳 Containerisierung** | Erstellung einer isolierten Docker-Umgebung | Saubere Installation, keine Konflikte mit vorhandener Software |
+| **🗄️ Datenbank-Setup** | Bereitstellung von Oracle Database XE 21c | Enterprise-Datenbank in Minuten |
+| **🌐 APEX-Installation** | Installation von Oracle Application Express | Low-Code-Entwicklungsplattform bereit |
+| **⚡ ORDS-Konfiguration** | Einrichtung von Oracle REST Data Services | Web-Oberfläche und REST-API aktiviert |
+| **🖥️ GUI & Integration** | Erstellung von Desktop-App & Systemd-Diensten | Native Anwendungserfahrung |
+| **🔧 Auto-Reparatur** | Anwendung von Sicherheitspatches und Fixes | Verhindert häufige Installationsfehler |
+| **🔄 Auto-Wiederherstellung** | Wiederherstellung der Schemas nach Neustart *(Neu)* | Kein "Invalid Schema"-Fehler mehr |
 
 </div>
 
@@ -119,28 +162,30 @@ Dies ist eine **intelligente Automatisierungslösung**, die einen komplexen, meh
 
 #### ❌ Traditionelle manuelle Installation
 
-- Erfordert **2-4 Stunden** technische Arbeit
-- Benötigt **tiefes Oracle-Wissen**
-- Komplexes **Abhängigkeitsmanagement**
+- Dauert **2-4 Stunden** technische Arbeit
+- Erfordert **tiefes Oracle-Wissen**
+- Komplexe **Abhängigkeitsverwaltung**
 - Anfällig für **Konfigurationsfehler**
-- **Keine GUI** oder Management-Tools
+- **Keine GUI** oder Verwaltungstools
 - **Manuelle Dienstkonfiguration** erforderlich
 - Risiko von **Systemkonflikten**
-- Keine **automatischen Reparaturen** enthalten
+- **Keine automatischen Fixes** enthalten
+- **Funktioniert nach Systemneustart nicht mehr**
 
 </td>
 <td width="50%" valign="top">
 
-#### ✅ Oracle APEX Ultimate Installer v2
+#### ✅ Ultimativer Oracle APEX Installer v2.4
 
-- Vollständiger Prozess in **10-15 Minuten** automatisch
-- Inklusive **Nativem GUI-Manager**
-- **Desktop-Verknüpfung** (wie eine echte App)
-- **Automatischer Start** beim Booten (Systemd)
-- **Automatische Behebung** häufiger Fehler (571, 404)
-- Integrierte **Diagnose- und Reparaturtools**
+- Wird automatisch in **10-15 Minuten** fertig
+- **Native grafische Verwaltung** enthalten (Absturzfrei!)
+- **Desktop-Verknüpfung** (Wie eine echte App)
+- **Auto-Start** beim Booten (Systemd)
+- **Auto-Reparatur** häufiger Fehler (500, 571, 574, 404)
+- **Eingebaute Diagnose**- und Reparaturtools
 - **Isolierte Docker**-Umgebung
-- Inklusive **kompletter Management-Suite**
+- **Komplettes Verwaltungspaket** enthalten
+- **Überlebt Systemneustart** mit intelligenter Wiederherstellung
 
 </td>
 </tr>
@@ -148,66 +193,72 @@ Dies ist eine **intelligente Automatisierungslösung**, die einen komplexen, meh
 
 <br>
 
-### 🚀 Installationsablauf
+### 🚀 Installations-Workflow
 
-Der Installer folgt einem intelligenten, praxiserprobten Prozess in **7 Phasen**:
+Der Installer folgt einem intelligenten, bewährten Prozess in **8 Phasen**:
 
 <br>
 
 **PHASE 1: SYSTEMVORBEREITUNG**
-- Erkennung der Linux-Distribution (Ubuntu/Debian/Fedora/openSUSE usw.)
-- Überprüfung der Systemressourcen (RAM, Speicherplatz, CPU)
+- Erkennung der Linux-Distribution (Ubuntu/Debian/Fedora/openSUSE/usw.)
+- Prüfung der Systemressourcen (RAM, Festplattenspeicher, CPU)
 - Überprüfung der Internetverbindung
 
-**PHASE 2: INSTALLATION DER ABHÄNGIGKEITEN**
+**PHASE 2: ABHÄNGIGKEITSINSTALLATION**
 - Installation von Docker Engine & Compose
 - Installation von Java (OpenJDK 17)
-- Installation von **Zenity** (für GUI)
+- Installation von **Zenity** (Für GUI)
 - Konfiguration der Docker-Berechtigungen
 
 **PHASE 3: DOCKER-UMGEBUNG**
-- Abrufen des Oracle Database XE 21c Images
+- Abrufen des Oracle Database XE 21c-Images
 - Erstellung von Docker-Netzwerk & persistenten Volumes
 - Konfiguration der Port-Mappings (1521, 8080)
 
 **PHASE 4: DATENBANK-BEREITSTELLUNG**
-- Start des Oracle Database Containers
-- Warten auf Datenbank-Initialisierung
+- Start des Oracle Database-Containers
+- Warten auf Datenbankinitialisierung
 - Erstellung von Datenbankbenutzern und Schemas
 
-**PHASE 5: APEX & ORDS INSTALLATION**
-- Herunterladen & Entpacken von APEX/ORDS (Neueste Version)
-- Installation der APEX-Schemas & REST-Konfiguration
-- Konfiguration von Verbindungspools & Proxy-Authentifizierung
-- Automatische Anwendung des **Fehler 571 Fixes**
+**PHASE 5: APEX & ORDS-INSTALLATION**
+- Download & Extraktion von APEX/ORDS (Neueste Version)
+- Installation von APEX-Schemas & REST-Konfiguration
+- Konfiguration von Connection-Pools & Proxy-Authentifizierung
+- Automatische Anwendung der **Fehler 571/574-Behebung**
 
-**PHASE 6: POST-INSTALLATION**
+**PHASE 6: NACH DER INSTALLATION**
 - Erstellung von Verwaltungsskripten
-- Generierung des **Nativen GUI-Managers** (`launch-gui.sh`)
+- Generierung der **nativen grafischen Verwaltung** (`launch-gui.sh`)
 - Erstellung von **Systemd-Diensten** (`oracle-apex-db` & `oracle-apex-ords`)
-- Generierung der **Desktop-Datei** (App-Verknüpfung)
+- Generierung der **Desktop-Entry-Datei** (`.desktop`)
 
-**PHASE 7: ABSCHLUSS & VERIFIKATION**
-- Ausführung von Systemgesundheitsprüfungen
+**PHASE 7: VERIFIZIERUNG**
+- Ausführung von System-Gesundheitsprüfungen
 - Generierung des Installationsberichts
 - Anzeige von Zugangsdaten und URLs
+
+**PHASE 8: EINRICHTUNG DER INTELLIGENTEN WIEDERHERSTELLUNG** *(Neu in v2.4.0)*
+- Konfiguration der Auto-Wiederherstellungsskripte
+- Einrichtung der Proxy-Grant-Wiederherstellung
+- Überprüfung der Neustart-Persistenz
 
 <br>
 
 ### 🎁 Was Sie erhalten
 
-Nach Abschluss der Installation verfügen Sie über:
+Nach Abschluss der Installation haben Sie:
 
 <div align="center">
 
 | Komponente | Beschreibung | Zugriff |
 |:---:|:---|:---|
-| **🗄️ Oracle Database XE 21c** | Enterprise-Grade Datenbank | Port 1521 |
-| **🌐 Oracle APEX** | Low-Code Entwicklungsplattform | Web-Interface |
+| **🗄️ Oracle Database XE 21c** | Enterprise-Datenbank | Port 1521 |
+| **🌐 Oracle APEX** | Low-Code-Entwicklungsplattform | Web-Oberfläche |
 | **⚡ Oracle ORDS** | REST Data Services | Port 8080 |
-| **🖥️ GUI Manager** | Natives grafisches Management-Tool | Desktop-Menü |
-| **🚀 Automatische Dienste** | Systemd-Integration | Boot-Zeit |
+| **🖥️ Grafische Verwaltung** | Natives grafisches Verwaltungstool (Stabil!) | Desktop-Menü |
+| **🚀 Auto-Start-Dienste** | Systemd-Integration mit Wiederherstellung | Boot-Zeit |
 | **🛠️ Verwaltungsskripte** | Start, Stopp, Status, Fix, Logs | Scripts-Ordner |
+| **🔄 Auto-Wiederherstellung** | Überlebt Neustart ohne Fehler *(Neu)* | Automatisch |
 
 </div>
 
@@ -220,48 +271,69 @@ Nach Abschluss der Installation verfügen Sie über:
   <tr>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Desktop%20Computer.png" width="50"/><br><br>
-      <b>🖥️ Nativer GUI</b><br>
-      <sub>Moderne Zenity-Oberfläche</sub>
+      <b>🖥️ Native GUI</b><br>
+      <sub>Moderne Zenity-Oberfläche</sub><br>
+      <sub><i>✨ Absturzfrei in v2.4!</i></sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Wrench.png" width="50"/><br><br>
-      <b>🔧 Auto-Fix</b><br>
-      <sub>Patcht Fehler 571 & 404</sub>
+      <b>🔧 Auto-Reparatur</b><br>
+      <sub>Behebt Fehler 500, 571, 574, 404</sub><br>
+      <sub><i>✨ Verbessert in v2.4!</i></sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Locked%20with%20Key.png" width="50"/><br><br>
       <b>🔒 Sicher</b><br>
-      <sub>Strenge Passwort-Richtlinien</sub>
+      <sub>Strenge Passwortrichtlinien</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Rocket.png" width="50"/><br><br>
       <b>🚀 Auto-Start</b><br>
-      <sub>Systemd-Service integriert</sub>
+      <sub>Systemd-Dienst integriert</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Package.png" width="50"/><br><br>
-      <b>🐳 Docker-Isoliert</b><br>
+      <b>🐳 Docker-isoliert</b><br>
       <sub>Saubere & sichere Umgebung</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Books.png" width="50"/><br><br>
       <b>📚 Mehrsprachig</b><br>
-      <sub>EN, FA, DE (GUI unterstützt)</sub>
+      <sub>EN, FA, DE (Volle Unterstützung)</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Hammer%20and%20Wrench.png" width="50"/><br><br>
       <b>🛠️ Hilfstools</b><br>
-      <sub>PW Reset, Proxy Fix, Logs</sub>
+      <sub>PW zurücksetzen, Proxy-Fix, Logs</sub>
     </td>
     <td align="center" width="25%">
-      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Mobile%20Phone.png" width="50"/><br><br>
-      <b>📱 Desktop-App</b><br>
-      <sub>App-Menü-Integration</sub>
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Counterclockwise%20Arrows%20Button.png" width="50"/><br><br>
+      <b>🔄 Intelligente Wiederherstellung</b><br>
+      <sub>Überlebt Neustart</sub><br>
+      <sub><i>✨ Neu in v2.4!</i></sub>
     </td>
   </tr>
 </table>
+</div>
+
+<br>
+
+## 🐛 Behobene Probleme in v2.4.0
+
+<div align="center">
+
+| Fehler | Symptome | Lösung in v2.4.0 |
+|:---:|:---|:---|
+| **Fehler 500** | Internal Server Error auf APEX-Seiten | ORDS_METADATA-Schema-Installation behoben |
+| **Fehler 574** | Database Credential Error | pool.xml-Konfiguration & Passwort-Sync behoben |
+| **Fehler 571** | Proxy Authentication Required | Auto-Grant von Proxy-Berechtigungen beim Start |
+| **Fehler 404** | Invalid Schema Name | Intelligente Wiederherstellung stellt Schemas nach Neustart wieder her |
+| **GUI-Absturz** | Anwendung schließt sich nach Aktion | main_menu()-Schleife mit korrekter Handhabung implementiert |
+| **Mehrere Fenster** | Mehrere GUI-Instanzen öffnen sich | Lock-File-System mit PID-Prüfung hinzugefügt |
+| **Schema verloren** | "Invalid schema" nach Neustart | Auto-Wiederherstellung in Start-Skript & Systemd-Dienst |
+
 </div>
 
 <br>
@@ -270,16 +342,16 @@ Nach Abschluss der Installation verfügen Sie über:
 
 <div align="center">
 
-Verwenden Sie nach Abschluss der Installation diese Zugangsdaten:
+Nach Abschluss der Installation verwenden Sie diese Zugangsdaten:
 
 | Dienst | URL / Details |
 | :--- | :--- |
 | 🔐 **Admin-Panel** | `http://localhost:8080/ords/apex_admin` |
-| 🏠 **Landing Page** | `http://localhost:8080/ords/_/landing` |
-| 👤 **Login-Seite** | `http://localhost:8080/ords/f?p=4550` |
+| 🏠 **Startseite** | `http://localhost:8080/ords/_/landing` |
+| 👤 **Anmeldeseite** | `http://localhost:8080/ords/f?p=4550` |
 | 🏢 **Workspace** | `INTERNAL` |
 | 👤 **Benutzername** | `ADMIN` |
-| 🔑 **Passwort** | *(Während der Installation festgelegt)* |
+| 🔑 **Passwort** | *(Wird während der Installation festgelegt)* |
 
 </div>
 
@@ -293,13 +365,14 @@ Hilfsskripte befinden sich in `~/oracle-apex-complete/scripts/`:
 
 | Skript | Befehl | Beschreibung |
 | :---: | :--- | :--- |
-| 🖥️ **GUI-Manager** | `bash scripts/launch-gui.sh` | **Empfohlen:** Öffnet das grafische Menü |
-| 🟢 **Start** | `bash scripts/start.sh` | Startet Datenbank- und ORDS-Dienste |
+| 🖥️ **Grafische Verwaltung** | `bash scripts/launch-gui.sh` | **Empfohlen:** Öffnet grafisches Menü *(Stabil!)* |
+| 🟢 **Start** | `bash scripts/start.sh` | Startet mit **Auto-Wiederherstellung** *(Verbessert!)* |
 | 🔴 **Stopp** | `bash scripts/stop.sh` | Stoppt alle Container und Dienste |
-| 📊 **Status** | `bash scripts/status.sh` | Prüft den Zustand von DB und ORDS |
+| 📊 **Status** | `bash scripts/status.sh` | Prüft Gesundheit von DB und ORDS |
+| 🔧 **Problembehebung** | `bash scripts/fix.sh` | **Umfassende Behebung** aller Fehler *(Neu!)* |
 | 🔧 **Proxy-Fix** | `bash scripts/fix-proxy.sh` | Behebt Fehler 571 / Proxy-Probleme |
-| 🔑 **PW Reset** | `bash scripts/reset-apex-password.sh` | Setzt das APEX-Admin-Passwort zurück |
-| 📜 **Logs** | `bash scripts/logs.sh` | Echtzeit-Logs anzeigen |
+| 🔑 **PW zurücksetzen** | `bash scripts/reset-apex-password.sh` | Setzt APEX-Admin-Passwort zurück |
+| 📜 **Logs** | `bash scripts/logs.sh` | Zeigt Live-Logs an |
 
 </div>
 
@@ -309,28 +382,28 @@ Hilfsskripte befinden sich in `~/oracle-apex-complete/scripts/`:
 
 <div align="center">
 
-### 🖥️ Neu: Nativer GUI-Manager
-<p><i>Verwalten Sie Ihre APEX-Instanz mit einer modernen grafischen Oberfläche</i></p>
+### 🖥️ Neu: Native grafische Verwaltung (v2.4.0 - Stabil!)
+<p><i>Verwalten Sie Ihre APEX-Instanz mit einer modernen, absturzfreien grafischen Oberfläche</i></p>
 
 | Hauptmenü-Dashboard | Status & Fortschritt |
 | :---: | :---: |
-| ![Hauptmenü](../assets/screenshots/gui-main-menu.png) | ![Status](../assets/screenshots/gui-status.png) |
+| ![Main Menu](../assets/screenshots/gui-main-menu.png) | ![Status](../assets/screenshots/gui-status.png) |
 
 <br>
 
-### 💻 Klassisches Terminal-Interface
-<p><i>Der leistungsstarke CLI-Installer, den Sie kennen</i></p>
+### 💻 Klassische Terminal-Oberfläche
+<p><i>Der leistungsstarke CLI-Installer, den Sie kennen und lieben</i></p>
 
-| Installationsstart (Banner) | Installationserfolg |
+| Installer-Start (Banner) | Installationserfolg |
 | :---: | :---: |
-| ![Start](../assets/screenshots/cli-start.png) | ![Erfolg](../assets/screenshots/cli-success.png) |
+| ![Start](../assets/screenshots/cli-start.png) | ![Success](../assets/screenshots/cli-success.png) |
 
 <br>
 
-### 🌐 Web-Interface
+### 🌐 Web-Oberfläche
 <p><i>Ihre vollständig bereitgestellte Oracle APEX-Umgebung</i></p>
 
-| Landing Page | APEX Dashboard |
+| Startseite | APEX-Dashboard |
 | :---: | :---: |
 | ![Landing](../assets/screenshots/landing.png) | ![Dashboard](../assets/screenshots/dashboard.png) |
 
@@ -344,13 +417,30 @@ Hilfsskripte befinden sich in `~/oracle-apex-complete/scripts/`:
 
 | Anforderung | Minimum | Empfohlen |
 | :--- | :---: | :---: |
-| **🖥️ Betriebssystem** | Linux (Jede Distro) | Ubuntu 22.04 / openSUSE |
+| **🖥️ Betriebssystem** | Linux (Jede Distribution) | Ubuntu 22.04 / openSUSE |
 | **🐳 Docker** | v20.10+ | v24.0+ |
 | **☕ Java** | OpenJDK 11 | OpenJDK 17+ |
-| **🎨 GUI-Lib** | Zenity | Aktuellste |
+| **🎨 GUI-Bibliothek** | Zenity | Neueste Version |
 | **💾 RAM** | 4 GB | 8 GB+ |
-| **💿 Speicherplatz** | 20 GB | 50 GB+ |
+| **💿 Festplattenspeicher** | 20 GB | 50 GB+ |
 | **🌐 Netzwerk** | Internet erforderlich | Stabile Verbindung |
+
+</div>
+
+<br>
+
+## 🚨 Fehlerbehebung
+
+<div align="center">
+
+| Problem | Lösung |
+|:---|:---|
+| **Fehler 500 nach Installation** | Ausführen: `bash scripts/fix.sh` |
+| **Fehler 574 Database Credential** | Ausführen: `bash scripts/fix.sh` |
+| **Invalid Schema nach Neustart** | Ausführen: `bash scripts/start.sh` (enthält Auto-Wiederherstellung) |
+| **GUI schließt sich unerwartet** | Auf v2.4.0 aktualisieren - dieses Problem ist behoben! |
+| **Mehrere GUI-Fenster öffnen sich** | Alle schließen und ausführen: `bash scripts/launch-gui.sh` |
+| **APEX nicht erreichbar** | Status prüfen mit: `bash scripts/status.sh` |
 
 </div>
 
@@ -359,15 +449,15 @@ Hilfsskripte befinden sich in `~/oracle-apex-complete/scripts/`:
 
 ## ㅤ
 
-___🚀 Schnelle Installation___
+___🚀 Schnellinstallation___
 ```
 curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/oracle-apex-installer.sh -o install.sh && chmod +x install.sh && bash install.sh
 
 ```
-***
+
 ## 📄 Lizenz
 
-Dieses Projekt ist unter der **MIT-Lizenz** lizenziert - siehe die Datei [LICENSE](../LICENSE) für Details.
+Dieses Projekt ist unter der **MIT-Lizenz** lizenziert - siehe die [LICENSE](../LICENSE)-Datei für Details.
 
 <br>
 
@@ -379,10 +469,10 @@ Dieses Projekt ist unter der **MIT-Lizenz** lizenziert - siehe die Datei [LICENS
 
 <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Beating%20Heart.png" width="50"/>
 
-## Unterstützung & Mitwirkung
+## Unterstützung & Mitwirken
 
 <p>
-  <i>Wenn Ihnen dieses Projekt Zeit gespart hat, ziehen Sie in Betracht, die Entwicklung zu unterstützen!</i>
+  <i>Wenn dieses Projekt Ihnen Zeit gespart hat, erwägen Sie, seine Entwicklung zu unterstützen!</i>
 </p>
 
 <br>
@@ -392,11 +482,11 @@ Dieses Projekt ist unter der **MIT-Lizenz** lizenziert - siehe die Datei [LICENS
 </a>
 &nbsp;&nbsp;
 <a href="https://daramet.com/KaizenixCore">
-  <img src="https://img.shields.io/badge/☕_Kauf_mir_einen_Kaffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Kaffee"/>
+  <img src="https://img.shields.io/badge/☕_Kauf_mir_einen_Kaffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Coffee"/>
 </a>
 &nbsp;&nbsp;
 <a href="https://github.com/KaizenixCore/oracle-apex-installer/stargazers">
-  <img src="https://img.shields.io/badge/⭐_Bewerte_dieses_Repo-181717?style=for-the-badge&logo=github" alt="Star"/>
+  <img src="https://img.shields.io/badge/⭐_Stern_geben-181717?style=for-the-badge&logo=github" alt="Star"/>
 </a>
 
 <br><br>
@@ -406,17 +496,17 @@ Dieses Projekt ist unter der **MIT-Lizenz** lizenziert - siehe die Datei [LICENS
     <td align="center" width="33%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Money%20Bag.png" width="40"/><br>
       <b>Finanzielle Unterstützung</b><br>
-      <sub><a href="https://daramet.com/KaizenixCore">Spenden via Daramet</a></sub>
+      <sub><a href="https://daramet.com/KaizenixCore">Spenden über Daramet</a></sub>
     </td>
     <td align="center" width="33%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Megaphone.png" width="40"/><br>
       <b>Weitersagen</b><br>
-      <sub>Teilen Sie es mit Ihrem Netzwerk</sub>
+      <sub>Mit Ihrem Netzwerk teilen</sub>
     </td>
     <td align="center" width="33%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Laptop.png" width="40"/><br>
       <b>Code beitragen</b><br>
-      <sub><a href="https://github.com/KaizenixCore/oracle-apex-installer/pulls">Senden Sie einen PR</a></sub>
+      <sub><a href="https://github.com/KaizenixCore/oracle-apex-installer/pulls">PR einreichen</a></sub>
     </td>
   </tr>
 </table>
@@ -427,41 +517,25 @@ Dieses Projekt ist unter der **MIT-Lizenz** lizenziert - siehe die Datei [LICENS
 
 <br>
 
-<div align="center">
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Love-You%20Gesture.png" width="45"/>
 
-<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Love-You%20Gesture.png" width="48"/>
+### Mit ❤️ erstellt von
 
-### Entwickelt mit ❤️ und Open-Source-Leidenschaft
+# [Peyman Rasouli](https://github.com/KaizenixCore/oracle-apex-installer/)
 
-<h2>Peyman Rasouli</h2>
-
-<sub>
-Full-Stack-Entwickler • Gründer von <b>KaizenixCore</b> • DevOps & Open-Source-Enthusiast
-</sub>
-
-<br><br>
-
-<a href="https://github.com/KaizenixCore">
-  <img src="https://img.shields.io/badge/GitHub-KaizenixCore-181717?style=for-the-badge&logo=github&logoColor=white"/>
-</a>
-&nbsp;
-<a href="https://github.com/KaizenixCore/oracle-apex-installer">
-  <img src="https://img.shields.io/badge/Projekt-Oracle_APEX_Installer-F80000?style=for-the-badge&logo=oracle&logoColor=white"/>
-</a>
-
-</div>
+<sub>Full-Stack-Entwickler & Open-Source-Enthusiast</sub>
 
 <br>
 
-<a href="https://github.com/peymanrasouli">
+<a href="https://github.com/KaizenixCore/oracle-apex-installer/">
   <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
 </a>
 &nbsp;
-<a href="https://github.com/peymanrasouli/oracle-apex-installer/issues">
-  <img src="https://img.shields.io/badge/Fehler_Melden-DC3545?style=for-the-badge&logo=github&logoColor=white" alt="Bug"/>
+<a href="https://github.com/KaizenixCore/oracle-apex-installer/issues">
+  <img src="https://img.shields.io/badge/Bug_melden-DC3545?style=for-the-badge&logo=github&logoColor=white" alt="Bug"/>
 </a>
 &nbsp;
-<a href="https://github.com/peymanrasouli/oracle-apex-installer/discussions">
+<a href="https://github.com/KaizenixCore/oracle-apex-installer/discussions">
   <img src="https://img.shields.io/badge/Diskussionen-5865F2?style=for-the-badge&logo=github&logoColor=white" alt="Discussions"/>
 </a>
 &nbsp;
@@ -481,5 +555,4 @@ Full-Stack-Entwickler • Gründer von <b>KaizenixCore</b> • DevOps & Open-Sou
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Star.png" width="15"/>
 </sub>
 
-</div>
 </div>
