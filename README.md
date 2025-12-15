@@ -15,11 +15,11 @@
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Gear.png" width="20"/>
 </h3>
 
-<p><i>KaizenixCore Edition v2.0.0</i></p>
+<p><i>KaizenixCore Edition v2.4.0</i></p>
 
 <!-- BADGES -->
 <p>
-  <img src="https://img.shields.io/badge/Version-2.0.0-blue?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-2.4.0-blue?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
   <img src="https://img.shields.io/badge/Status-Stable-success?style=for-the-badge" alt="Status"/>
 </p>
@@ -30,6 +30,24 @@
   <img src="https://img.shields.io/badge/Oracle-APEX-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="APEX"/>
   <img src="https://img.shields.io/badge/ORDS-Latest-orange?style=for-the-badge" alt="ORDS"/>
 </p>
+
+<br>
+
+<!-- NEW IN v2.4.0 BANNER -->
+<table>
+<tr>
+<td>
+
+### 🎉 What's New in v2.4.0
+
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **GUI Crash Fixed** - No more unexpected closes!<br>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **Smart Auto-Recovery** - Schemas survive system restart<br>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **Error 500/574 Fixed** - Database credential issues resolved<br>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Sparkles.png" width="20"/> **Invalid Schema Fixed** - No more "schema not found" after reboot
+
+</td>
+</tr>
+</table>
 
 <br>
 
@@ -74,9 +92,32 @@
 
 <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Light%20Bulb.png" width="25" align="left"/>
 
-**Oracle APEX Ultimate Installer v2.0** is a state-of-the-art Bash script designed to fully automate the deployment of **Oracle APEX**, **ORDS**, and **Oracle Database XE 21c**.
+**Oracle APEX Ultimate Installer v2.4.0** is a state-of-the-art Bash script designed to fully automate the deployment of **Oracle APEX**, **ORDS**, and **Oracle Database XE 21c**.
 
-Now featuring a **Native GUI Manager**, **Desktop Application integration**, and **Systemd Service auto-start**. Using Docker, it creates a pristine, isolated environment and automatically handles complex configurations like **Error 571** patches and **Proxy Authentication** — saving you hours of manual setup!
+Now featuring a **Native GUI Manager**, **Desktop Application integration**, **Systemd Service auto-start**, and **Smart Auto-Recovery** that keeps your schemas intact after system restart. Using Docker, it creates a pristine, isolated environment and automatically handles complex configurations like **Error 571**, **Error 574**, **Error 500** patches and **Proxy Authentication** — saving you hours of manual setup!
+
+<br>
+
+### 🆕 Version 2.4.0 Changelog
+
+<div align="center">
+
+| Category | Change | Description |
+|:---:|:---|:---|
+| 🐛 **Bug Fix** | GUI Crash Fixed | GUI no longer closes unexpectedly after actions |
+| 🐛 **Bug Fix** | Error 500 Fixed | Internal Server Error resolved |
+| 🐛 **Bug Fix** | Error 574 Fixed | Database Credential Error resolved |
+| 🐛 **Bug Fix** | Error 571 Fixed | Proxy Authentication Error resolved |
+| 🐛 **Bug Fix** | Invalid Schema Fixed | "Schema not found" after browser refresh fixed |
+| ✨ **New Feature** | Smart Auto-Recovery | Automatically restores proxy grants after reboot |
+| ✨ **New Feature** | Lock File System | Prevents multiple GUI instances |
+| ✨ **New Feature** | Enhanced Fix Script | Comprehensive fix for all known issues |
+| 🔧 **Improvement** | Systemd Services | Auto-recovery integrated into boot services |
+| 🔧 **Improvement** | Start Script | Now includes automatic schema recovery |
+| 🔧 **Improvement** | GUI Stability | Main menu loop keeps GUI running |
+| 📚 **Docs** | Full Language Support | Complete EN/FA/DE translations in GUI |
+
+</div>
 
 <br>
 
@@ -89,6 +130,7 @@ This is an **intelligent automation solution** that transforms a complex, multi-
 - **Deploys Everything**: Sets up Oracle Database XE 21c, APEX, and ORDS in perfect harmony
 - **Native GUI Manager**: Provides a modern, multi-language graphical interface for management
 - **System Integration**: Creates Desktop Shortcuts and Systemd services for auto-start on boot
+- **Smart Recovery**: Automatically fixes schema and proxy issues after system restart *(NEW in v2.4.0)*
 
 <br>
 
@@ -106,6 +148,7 @@ This is an **intelligent automation solution** that transforms a complex, multi-
 | **⚡ ORDS Configuration** | Sets up Oracle REST Data Services | Web interface and REST APIs enabled |
 | **🖥️ GUI & Integration** | Creates Desktop App & Systemd Services | Native application experience |
 | **🔧 Auto-Fixing** | Applies security patches and fixes | Prevents common installation errors |
+| **🔄 Auto-Recovery** | Restores schemas after restart *(NEW)* | No more "Invalid Schema" errors |
 
 </div>
 
@@ -127,20 +170,22 @@ This is an **intelligent automation solution** that transforms a complex, multi-
 - **Manual service configuration** required
 - Risk of **system conflicts**
 - No **automated fixes** included
+- **Breaks after system restart**
 
 </td>
 <td width="50%" valign="top">
 
-#### ✅ Oracle APEX Ultimate Installer v2
+#### ✅ Oracle APEX Ultimate Installer v2.4
 
 - Completes in **10-15 minutes** automatically
-- **Native GUI Manager** included
+- **Native GUI Manager** included (Crash-Free!)
 - **Desktop Shortcut** (Like a real app)
 - **Auto-Start** on boot (Systemd)
-- **Auto-fixes** common errors (571, 404)
+- **Auto-fixes** common errors (500, 571, 574, 404)
 - **Built-in diagnostics** and repair tools
 - **Isolated Docker** environment
 - **Complete management suite** included
+- **Survives system restart** with Smart Recovery
 
 </td>
 </tr>
@@ -150,7 +195,7 @@ This is an **intelligent automation solution** that transforms a complex, multi-
 
 ### 🚀 Installation Workflow
 
-The installer follows a smart, battle-tested process in **7 phases**:
+The installer follows a smart, battle-tested process in **8 phases**:
 
 <br>
 
@@ -179,7 +224,7 @@ The installer follows a smart, battle-tested process in **7 phases**:
 - Download & Extract APEX/ORDS (Latest)
 - Install APEX schemas & Configure REST
 - Configure connection pools & Proxy Authentication
-- Apply **Error 571 Fix** automatically
+- Apply **Error 571/574 Fix** automatically
 
 **PHASE 6: POST-INSTALLATION**
 - Create management scripts
@@ -191,6 +236,11 @@ The installer follows a smart, battle-tested process in **7 phases**:
 - Run system health checks
 - Generate installation report
 - Display access credentials and URLs
+
+**PHASE 8: SMART RECOVERY SETUP** *(NEW in v2.4.0)*
+- Configure auto-recovery scripts
+- Setup proxy grant restoration
+- Verify restart persistence
 
 <br>
 
@@ -205,9 +255,10 @@ After installation completes, you'll have:
 | **🗄️ Oracle Database XE 21c** | Enterprise-grade database | Port 1521 |
 | **🌐 Oracle APEX** | Low-code development platform | Web interface |
 | **⚡ Oracle ORDS** | REST Data Services | Port 8080 |
-| **🖥️ GUI Manager** | Native graphical management tool | Desktop Menu |
-| **🚀 Auto-Start Services** | Systemd integration | Boot time |
+| **🖥️ GUI Manager** | Native graphical management tool (Stable!) | Desktop Menu |
+| **🚀 Auto-Start Services** | Systemd integration with recovery | Boot time |
 | **🛠️ Management Scripts** | Start, stop, status, fix, logs | Scripts folder |
+| **🔄 Auto-Recovery** | Survives restart without errors *(NEW)* | Automatic |
 
 </div>
 
@@ -221,12 +272,14 @@ After installation completes, you'll have:
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Desktop%20Computer.png" width="50"/><br><br>
       <b>🖥️ Native GUI</b><br>
-      <sub>Modern Zenity Interface</sub>
+      <sub>Modern Zenity Interface</sub><br>
+      <sub><i>✨ Crash-Free in v2.4!</i></sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Wrench.png" width="50"/><br><br>
       <b>🔧 Auto Fixes</b><br>
-      <sub>Patches Error 571 & 404</sub>
+      <sub>Patches Error 500, 571, 574, 404</sub><br>
+      <sub><i>✨ Enhanced in v2.4!</i></sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Locked%20with%20Key.png" width="50"/><br><br>
@@ -248,7 +301,7 @@ After installation completes, you'll have:
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Books.png" width="50"/><br><br>
       <b>📚 Multi-Language</b><br>
-      <sub>EN, FA, DE (GUI supported)</sub>
+      <sub>EN, FA, DE (Full Support)</sub>
     </td>
     <td align="center" width="25%">
       <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Hammer%20and%20Wrench.png" width="50"/><br><br>
@@ -256,12 +309,31 @@ After installation completes, you'll have:
       <sub>Reset PW, Fix Proxy, Logs</sub>
     </td>
     <td align="center" width="25%">
-      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Mobile%20Phone.png" width="50"/><br><br>
-      <b>📱 Desktop App</b><br>
-      <sub>App Menu Integration</sub>
+      <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Counterclockwise%20Arrows%20Button.png" width="50"/><br><br>
+      <b>🔄 Smart Recovery</b><br>
+      <sub>Survives Restart</sub><br>
+      <sub><i>✨ NEW in v2.4!</i></sub>
     </td>
   </tr>
 </table>
+</div>
+
+<br>
+
+## 🐛 Issues Fixed in v2.4.0
+
+<div align="center">
+
+| Error | Symptoms | Solution in v2.4.0 |
+|:---:|:---|:---|
+| **Error 500** | Internal Server Error on APEX pages | Fixed ORDS_METADATA schema installation |
+| **Error 574** | Database Credential Error | Fixed pool.xml configuration & password sync |
+| **Error 571** | Proxy Authentication Required | Auto-grant proxy permissions on startup |
+| **Error 404** | Invalid Schema Name | Smart recovery restores schemas after reboot |
+| **GUI Crash** | Application closes after action | Implemented main_menu() loop with proper handling |
+| **Multiple Windows** | Several GUI instances open | Added lock file system with PID check |
+| **Schema Lost** | "Invalid schema" after restart | Auto-recovery in start script & systemd service |
+
 </div>
 
 <br>
@@ -293,10 +365,11 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 
 | Script | Command | Description |
 | :---: | :--- | :--- |
-| 🖥️ **GUI Manager** | `bash scripts/launch-gui.sh` | **Recommended:** Opens graphical menu |
-| 🟢 **Start** | `bash scripts/start.sh` | Starts Database and ORDS services |
+| 🖥️ **GUI Manager** | `bash scripts/launch-gui.sh` | **Recommended:** Opens graphical menu *(Stable!)* |
+| 🟢 **Start** | `bash scripts/start.sh` | Starts with **Auto-Recovery** *(Enhanced!)* |
 | 🔴 **Stop** | `bash scripts/stop.sh` | Stops all containers and services |
 | 📊 **Status** | `bash scripts/status.sh` | Checks health of DB and ORDS |
+| 🔧 **Fix** | `bash scripts/fix.sh` | **Comprehensive fix** for all errors *(NEW!)* |
 | 🔧 **Fix Proxy** | `bash scripts/fix-proxy.sh` | Fixes Error 571 / Proxy issues |
 | 🔑 **Reset PW** | `bash scripts/reset-apex-password.sh` | Resets APEX Admin password |
 | 📜 **Logs** | `bash scripts/logs.sh` | View real-time logs |
@@ -309,8 +382,8 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 
 <div align="center">
 
-### 🖥️ New: Native GUI Manager
-<p><i>Manage your APEX instance with a modern, graphical interface</i></p>
+### 🖥️ New: Native GUI Manager (v2.4.0 - Stable!)
+<p><i>Manage your APEX instance with a modern, crash-free graphical interface</i></p>
 
 | Main Menu Dashboard | Status & Progress |
 | :---: | :---: |
@@ -351,6 +424,23 @@ Helper scripts are located in `~/oracle-apex-complete/scripts/`:
 | **💾 RAM** | 4 GB | 8 GB+ |
 | **💿 Disk Space** | 20 GB | 50 GB+ |
 | **🌐 Network** | Internet Required | Stable Connection |
+
+</div>
+
+<br>
+
+## 🚨 Troubleshooting
+
+<div align="center">
+
+| Problem | Solution |
+|:---|:---|
+| **Error 500 after install** | Run `bash scripts/fix.sh` |
+| **Error 574 Database Credential** | Run `bash scripts/fix.sh` |
+| **Invalid Schema after restart** | Run `bash scripts/start.sh` (includes auto-recovery) |
+| **GUI closes unexpectedly** | Update to v2.4.0 - this is fixed! |
+| **Multiple GUI windows** | Close all and run `bash scripts/launch-gui.sh` |
+| **APEX not accessible** | Check status with `bash scripts/status.sh` |
 
 </div>
 
@@ -431,21 +521,21 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ### Crafted with ❤️ by
 
-# [Peyman Rasouli](https://github.com/peymanrasouli)
+# [Peyman Rasouli](https://github.com/KaizenixCore/oracle-apex-installer/)
 
 <sub>Full-Stack Developer & Open Source Enthusiast</sub>
 
 <br>
 
-<a href="https://github.com/peymanrasouli">
+<a href="https://github.com/KaizenixCore/oracle-apex-installer/">
   <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
 </a>
 &nbsp;
-<a href="https://github.com/peymanrasouli/oracle-apex-installer/issues">
+<a href="https://github.com/KaizenixCore/oracle-apex-installer/issues">
   <img src="https://img.shields.io/badge/Report_Bug-DC3545?style=for-the-badge&logo=github&logoColor=white" alt="Bug"/>
 </a>
 &nbsp;
-<a href="https://github.com/peymanrasouli/oracle-apex-installer/discussions">
+<a href="https://github.com/KaizenixCore/oracle-apex-installer/discussions">
   <img src="https://img.shields.io/badge/Discussions-5865F2?style=for-the-badge&logo=github&logoColor=white" alt="Discussions"/>
 </a>
 &nbsp;
