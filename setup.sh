@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
-#  KaizenixCore Oracle APEX - Setup Script v3.0.0
-#  Fixes: Interactive input with pipe, DBeaver support, Cross-platform
+#  KaizenixCore Oracle APEX - Setup Script v3.0.1
+#  Auto-run installer after download
 ################################################################################
 
 set -e
@@ -17,7 +17,7 @@ echo "  ██╔═██╗ ██╔══██║██║ ███╔╝ 
 echo "  ██║  ██╗██║  ██║██║███████╗███████╗██║ ╚████║██║██╔╝ ██╗"
 echo "  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝"
 echo ""
-echo "  🚀 Oracle APEX Ultimate Installer - Setup v3.0.0"
+echo "  🚀 Oracle APEX Ultimate Installer - Setup v3.0.1"
 echo "  ════════════════════════════════════════════════════════"
 echo ""
 echo "  ✅ Cross-Platform (Linux, macOS, Windows WSL)"
@@ -57,27 +57,18 @@ echo "  ✅ Setup completed!"
 echo ""
 echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
+echo "  🎯 Starting installation in 3 seconds..."
+echo ""
 
-# Check if running interactively
-if [ -t 0 ]; then
-    # Interactive mode - run installer directly
-    echo "  🎯 Starting installation..."
-    echo ""
-    exec bash oracle-apex-installer.sh
-else
-    # Pipe mode - show instructions
-    echo "  📌 Files downloaded to: $TARGET_DIR"
-    echo ""
-    echo "  🎯 To start installation, run:"
-    echo ""
-    echo "     cd $TARGET_DIR && bash oracle-apex-installer.sh"
-    echo ""
-    echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "  💡 Or use this one-liner:"
-    echo ""
-    echo "     bash $TARGET_DIR/oracle-apex-installer.sh"
-    echo ""
-    echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-fi
+# Wait 3 seconds
+for i in 3 2 1; do
+    echo "     $i..."
+    sleep 1
+done
+
+echo ""
+echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Run installer (even when piped)
+exec bash oracle-apex-installer.sh < /dev/tty
