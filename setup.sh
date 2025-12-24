@@ -1,60 +1,83 @@
 #!/bin/bash
 ################################################################################
-#  KaizenixCore Oracle APEX - One-Line Installer v3.0.0
-#  Usage: curl -fsSL <URL>/setup.sh | bash
+#  KaizenixCore Oracle APEX - Setup Script v3.0.0
+#  Fixes: Interactive input with pipe, DBeaver support, Cross-platform
 ################################################################################
+
+set -e
 
 REPO_URL="https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main"
 TARGET_DIR="$HOME/oracle-apex-complete"
 
-echo "🚀 KaizenixCore Oracle APEX Installer v3.0.0"
-echo "════════════════════════════════════════════"
+echo ""
+echo "  ██╗  ██╗ █████╗ ██╗███████╗███████╗███╗   ██╗██╗██╗  ██╗"
+echo "  ██║ ██╔╝██╔══██╗██║╚══███╔╝██╔════╝████╗  ██║██║╚██╗██╔╝"
+echo "  █████╔╝ ███████║██║  ███╔╝ █████╗  ██╔██╗ ██║██║ ╚███╔╝ "
+echo "  ██╔═██╗ ██╔══██║██║ ███╔╝  ██╔══╝  ██║╚██╗██║██║ ██╔██╗ "
+echo "  ██║  ██╗██║  ██║██║███████╗███████╗██║ ╚████║██║██╔╝ ██╗"
+echo "  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝"
+echo ""
+echo "  🚀 Oracle APEX Ultimate Installer - Setup v3.0.0"
+echo "  ════════════════════════════════════════════════════════"
+echo ""
+echo "  ✅ Cross-Platform (Linux, macOS, Windows WSL)"
+echo "  ✅ DBeaver Database Tool Support"
+echo "  ✅ Modern GUI (YAD/Zenity)"
+echo "  ✅ Multi-Language (English/Persian/German)"
+echo ""
+echo "  ════════════════════════════════════════════════════════"
 echo ""
 
 # Create directory
 mkdir -p "$TARGET_DIR"
 cd "$TARGET_DIR"
 
-# Download scripts
-echo "📥 Downloading installation files..."
+echo "  📥 Downloading installation files..."
+echo ""
 
-if ! curl -fsSL "$REPO_URL/install.sh" -o install.sh; then
-    echo "❌ Error: Could not download install.sh"
+# Download main installer
+if curl -fsSL "$REPO_URL/oracle-apex-installer.sh" -o oracle-apex-installer.sh 2>/dev/null; then
+    echo "  ✅ oracle-apex-installer.sh downloaded"
+else
+    echo "  ❌ Failed to download oracle-apex-installer.sh"
+    echo ""
+    echo "  Please check:"
+    echo "    1. Internet connection"
+    echo "    2. GitHub repository: https://github.com/KaizenixCore/oracle-apex-installer"
+    echo "    3. File exists: $REPO_URL/oracle-apex-installer.sh"
+    echo ""
     exit 1
 fi
 
-if ! curl -fsSL "$REPO_URL/dbeaver.sh" -o dbeaver.sh; then
-    echo "⚠️  Warning: Could not download dbeaver.sh (optional)"
-fi
-
 # Make executable
-chmod +x install.sh
-[ -f dbeaver.sh ] && chmod +x dbeaver.sh
+chmod +x oracle-apex-installer.sh
 
-echo "✅ Files downloaded successfully!"
+echo ""
+echo "  ✅ Setup completed!"
+echo ""
+echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Check if running in pipe (non-interactive)
+# Check if running interactively
 if [ -t 0 ]; then
-    # Interactive mode - run directly
-    echo "🎯 Starting installation..."
+    # Interactive mode - run installer directly
+    echo "  🎯 Starting installation..."
     echo ""
-    bash install.sh
+    exec bash oracle-apex-installer.sh
 else
     # Pipe mode - show instructions
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "  ✅ Setup completed! Files are ready in:"
-    echo "     $TARGET_DIR"
+    echo "  📌 Files downloaded to: $TARGET_DIR"
     echo ""
     echo "  🎯 To start installation, run:"
     echo ""
-    echo "     cd $TARGET_DIR && bash install.sh"
+    echo "     cd $TARGET_DIR && bash oracle-apex-installer.sh"
     echo ""
-    echo "  Or run this one-liner:"
+    echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "     cd ~ && bash oracle-apex-complete/install.sh"
+    echo "  💡 Or use this one-liner:"
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "     bash $TARGET_DIR/oracle-apex-installer.sh"
+    echo ""
+    echo "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 fi
