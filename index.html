@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Oracle APEX Ultimate Installer - One-click automated installation">
+    <meta name="keywords" content="Oracle APEX, ORDS, Docker, Installation, Database">
+    <meta name="author" content="Peyman Rasouli - KaizenixCore">
+    <title>Oracle APEX Ultimate Installer | KaizenixCore</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .logo {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .version {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .tagline {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .feature {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .install-section {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .install-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .command-box {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            margin: 20px 0;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background: #10b981;
+        }
+
+        .big-install-btn {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .big-install-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .steps {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
+        }
+
+        .step {
+            margin-bottom: 20px;
+            padding-left: 40px;
+            position: relative;
+        }
+
+        .step-number {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .platforms {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .platform {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.8;
+        }
+
+        .github-link {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .github-link:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            .install-section {
+                padding: 20px;
+            }
+            .command-box {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🚀</div>
+            <h1>Oracle APEX Ultimate Installer</h1>
+            <div class="version">v3.0.0</div>
+            <p class="tagline">One-command automated installation of Oracle APEX + ORDS + XE 21c</p>
+        </header>
+
+        <div class="features">
+            <div class="feature">✅ Cross-Platform<br><small>Linux • macOS • Windows</small></div>
+            <div class="feature">✅ Modern GUI<br><small>YAD/Zenity</small></div>
+            <div class="feature">✅ Multi-Language<br><small>EN • FA • DE</small></div>
+            <div class="feature">✅ DBeaver<br><small>Database Tool</small></div>
+            <div class="feature">✅ Error-Free<br><small>500/571/574/404</small></div>
+            <div class="feature">✅ Auto-Start<br><small>Systemd Services</small></div>
+        </div>
+
+        <div class="install-section">
+            <h2 class="install-title">🎯 Quick Install</h2>
+            <p style="margin-bottom: 20px;">Copy and paste this command in your terminal:</p>
+            
+            <div class="command-box" id="installCmd">
+curl -fsSL https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/setup.sh -o /tmp/apex-setup.sh && chmod +x /tmp/apex-setup.sh && bash /tmp/apex-setup.sh
+                <button class="copy-btn" onclick="copyCommand()">Copy</button>
+            </div>
+
+            <a href="#" class="big-install-btn" onclick="copyAndNotify(); return false;">
+                📋 Click to Copy Install Command
+            </a>
+        </div>
+
+        <div class="platforms">
+            <div class="platform">🐧 Ubuntu/Debian</div>
+            <div class="platform">🦎 openSUSE</div>
+            <div class="platform">🎩 Fedora/RHEL</div>
+            <div class="platform">🍎 macOS</div>
+            <div class="platform">🪟 Windows (WSL)</div>
+        </div>
+
+        <div class="steps">
+            <h2 style="margin-bottom: 30px; text-align: center;">📋 Installation Steps</h2>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Open Terminal</h3>
+                <p>Open your terminal application</p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Run Install Command</h3>
+                <p>Paste the command above and press Enter</p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Enter Passwords</h3>
+                <p>Set database and APEX admin passwords when prompted</p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Wait for Installation</h3>
+                <p>Installation takes 15-30 minutes (grab a coffee! ☕)</p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">5</div>
+                <h3>Access APEX</h3>
+                <p>Open browser: <code style="background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 3px;">http://localhost:8080/ords/apex_admin</code></p>
+            </div>
+        </div>
+
+        <div class="install-section">
+            <h2 class="install-title">🖥️ After Installation</h2>
+            
+            <h3 style="margin: 20px 0 10px 0;">Launch GUI Manager:</h3>
+            <div class="command-box">
+bash ~/oracle-apex-complete/scripts/launch-gui.sh
+                <button class="copy-btn" onclick="copyText(this)">Copy</button>
+            </div>
+
+            <h3 style="margin: 20px 0 10px 0;">Or find in Applications Menu:</h3>
+            <p>Applications → Development → <strong>Oracle APEX Manager</strong></p>
+
+            <h3 style="margin: 30px 0 10px 0;">Command Line Tools:</h3>
+            <div class="command-box">
+# Start services
+bash ~/oracle-apex-complete/scripts/start.sh
+
+# Stop services
+bash ~/oracle-apex-complete/scripts/stop.sh
+
+# Check status
+bash ~/oracle-apex-complete/scripts/status.sh
+
+# Fix errors
+bash ~/oracle-apex-complete/scripts/fix.sh
+                <button class="copy-btn" onclick="copyText(this)">Copy</button>
+            </div>
+        </div>
+
+        <div class="install-section">
+            <h2 class="install-title">🌐 Access URLs</h2>
+            <ul style="list-style: none; padding: 0;">
+                <li style="margin: 10px 0;">
+                    <strong>APEX Admin:</strong> 
+                    <a href="http://localhost:8080/ords/apex_admin" target="_blank" style="color: #667eea;">http://localhost:8080/ords/apex_admin</a>
+                </li>
+                <li style="margin: 10px 0;">
+                    <strong>APEX Login:</strong> 
+                    <a href="http://localhost:8080/ords/f?p=4550" target="_blank" style="color: #667eea;">http://localhost:8080/ords/f?p=4550</a>
+                </li>
+            </ul>
+            
+            <h3 style="margin-top: 30px;">🔐 Default Credentials:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Workspace:</strong> INTERNAL</li>
+                <li><strong>Username:</strong> ADMIN</li>
+                <li><strong>Password:</strong> <em>(set during installation)</em></li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>Created with ❤️ by <strong>Peyman Rasouli</strong></p>
+            <p style="margin: 10px 0;">Project: <strong>KaizenixCore</strong></p>
+            <a href="https://github.com/KaizenixCore/oracle-apex-installer" target="_blank" class="github-link">
+                ⭐ View on GitHub
+            </a>
+            <p style="margin-top: 20px; font-size: 0.9em;">MIT License • v3.0.0</p>
+        </footer>
+    </div>
+
+    <script>
+        function copyCommand() {
+            const cmd = document.getElementById('installCmd').textContent.trim();
+            copyToClipboard(cmd);
+        }
+
+        function copyText(btn) {
+            const box = btn.parentElement;
+            const text = box.textContent.replace('Copy', '').trim();
+            copyToClipboard(text);
+            
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('Copied to clipboard');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                console.log('Copied using fallback');
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function copyAndNotify() {
+            copyCommand();
+            const btn = document.querySelector('.big-install-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Copied! Now paste in terminal';
+            btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
