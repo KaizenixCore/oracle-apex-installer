@@ -1,7 +1,9 @@
+cat > install-web-gui.sh << 'EOF'
 #!/bin/bash
 ################################################################################
-#  Oracle APEX Web Installer - Quick Setup
+#  Oracle APEX Complete Web Installer - Quick Setup
 #  Created by: Peyman Rasouli - KaizenixCore
+#  Version: 4.0
 ################################################################################
 
 set -e
@@ -9,7 +11,7 @@ set -e
 echo ""
 echo "  ╔═══════════════════════════════════════════════════════════════════╗"
 echo "  ║                                                                   ║"
-echo "  ║           🚀 Oracle APEX Web Installer Setup 🚀                  ║"
+echo "  ║      🚀 Oracle APEX Complete Web Installer Setup 🚀              ║"
 echo "  ║                                                                   ║"
 echo "  ╚═══════════════════════════════════════════════════════════════════╝"
 echo ""
@@ -39,7 +41,6 @@ REPO_URL="https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/m
 
 curl -fsSL "$REPO_URL/Dockerfile" -o Dockerfile
 curl -fsSL "$REPO_URL/web-installer.py" -o web-installer.py
-curl -fsSL "$REPO_URL/web-installer.html" -o web-installer.html
 curl -fsSL "$REPO_URL/docker-compose.yml" -o docker-compose.yml
 
 echo "  ✅ Files downloaded"
@@ -61,6 +62,8 @@ echo ""
 
 docker-compose up -d
 
+sleep 3
+
 echo ""
 echo "  ╔═══════════════════════════════════════════════════════════════════╗"
 echo "  ║                                                                   ║"
@@ -80,3 +83,6 @@ echo "     Stop:    docker-compose down"
 echo "     Restart: docker-compose restart"
 echo "     Logs:    docker-compose logs -f"
 echo ""
+EOF
+
+chmod +x install-web-gui.sh
