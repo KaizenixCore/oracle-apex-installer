@@ -1,20 +1,15 @@
+cat > docker-compose.yml << 'EOF'
 version: '3.8'
 
 services:
-  oracle-apex-web-installer:
+  apex-web-installer:
     build: .
     container_name: apex-web-installer
     ports:
       - "8888:8888"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - $HOME/oracle-apex-complete:/root/oracle-apex-complete
     environment:
-      - PYTHONUNBUFFERED=1
+      - TERM=xterm-256color
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
     restart: unless-stopped
-    networks:
-      - apex-network
-
-networks:
-  apex-network:
-    driver: bridge
+EOF
