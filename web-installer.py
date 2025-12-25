@@ -2,12 +2,12 @@
 """
 Oracle APEX Web Installer - Backend Server
 Created by: Peyman Rasouli - KaizenixCore
+Version: 3.1.0
 """
 
 import asyncio
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 from aiohttp import web
@@ -33,17 +33,24 @@ class InstallationManager:
                 return_exceptions=True
             )
     
-    async def run_command(self, command, cwd=None):
+    async def run_command(self, command, cwd=None, input_data=None):
         """Run shell command and stream output"""
         try:
             self.process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
-                stdin=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.PIPE if input_data else None,
                 cwd=cwd
             )
             
+            # Send input if provided
+            if input_data and self.process.stdin:
+                self.process.stdin.write(input_data.encode())
+                await self.process.stdin.drain()
+                self.process.stdin.close()
+            
+            # Read output line by line
             while True:
                 line = await self.process.stdout.readline()
                 if not line:
@@ -61,9 +68,11 @@ class InstallationManager:
             return self.process.returncode
             
         except Exception as e:
+            error_msg = f"Command execution error: {str(e)}"
+            self.install_log.append(error_msg)
             await self.broadcast({
                 'type': 'error',
-                'data': str(e)
+                'data': error_msg
             })
             return 1
     
@@ -81,58 +90,79 @@ class InstallationManager:
                 'data': 'Starting installation...'
             })
             
-            # Step 1: Download setup script
+            # Step 1: Download installer
             await self.broadcast({
                 'type': 'step',
-                'data': 'Downloading installer...'
+                'data': '📥 Downloading Oracle APEX installer...'
             })
             
-            setup_url = "https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/setup.sh"
-            download_cmd = f"curl -fsSL {setup_url} -o /tmp/apex-setup.sh && chmod +x /tmp/apex-setup.sh"
+            installer_url = "https://raw.githubusercontent.com/KaizenixCore/oracle-apex-installer/main/oracle-apex-installer.sh"
+            download_cmd = f"curl -fsSL {installer_url} -o /tmp/install.sh && chmod +x /tmp/install.sh"
             
             returncode = await self.run_command(download_cmd)
             if returncode != 0:
                 raise Exception("Failed to download installer")
             
-            # Step 2: Run installer with passwords
             await self.broadcast({
                 'type': 'step',
-                'data': 'Running installer...'
+                'data': '✅ Installer downloaded successfully'
             })
             
-            # Create password file
-            password_file = PROJECT_DIR / '.passwords'
-            PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+            # Step 2: Prepare password input
+            await self.broadcast({
+                'type': 'step',
+                'data': '🔐 Preparing installation with provided passwords...'
+            })
             
-            with open(password_file, 'w') as f:
-                f.write(f"{db_password}\n{apex_password}\n")
+            # Create password input (2 passwords, each entered twice)
+            password_input = f"{db_password}\n{db_password}\n{apex_password}\n{apex_password}\n"
             
-            # Run installer
-            install_cmd = f"bash /tmp/apex-setup.sh < {password_file}"
-            returncode = await self.run_command(install_cmd)
+            # Step 3: Run installer
+            await self.broadcast({
+                'type': 'step',
+                'data': '🚀 Running Oracle APEX installer...'
+            })
             
-            # Cleanup password file
-            password_file.unlink(missing_ok=True)
+            await self.broadcast({
+                'type': 'log',
+                'data': '═══════════════════════════════════════════════════════'
+            })
+            await self.broadcast({
+                'type': 'log',
+                'data': '  Starting Oracle APEX Installation'
+            })
+            await self.broadcast({
+                'type': 'log',
+                'data': '  This may take 15-30 minutes...'
+            })
+            await self.broadcast({
+                'type': 'log',
+                'data': '═══════════════════════════════════════════════════════'
+            })
+            
+            install_cmd = "bash /tmp/install.sh"
+            returncode = await self.run_command(install_cmd, input_data=password_input)
             
             if returncode == 0:
                 await self.broadcast({
                     'type': 'complete',
-                    'data': 'Installation completed successfully!'
+                    'data': '✅ Oracle APEX installed successfully!'
                 })
+                return {'success': True}
             else:
                 await self.broadcast({
                     'type': 'error',
-                    'data': 'Installation failed. Check logs for details.'
+                    'data': '❌ Installation failed. Please check the logs above for details.'
                 })
-            
-            return {'success': returncode == 0}
+                return {'success': False}
             
         except Exception as e:
+            error_msg = f"Installation error: {str(e)}"
             await self.broadcast({
                 'type': 'error',
-                'data': str(e)
+                'data': error_msg
             })
-            return {'error': str(e)}
+            return {'error': error_msg}
         
         finally:
             self.is_installing = False
@@ -152,6 +182,8 @@ manager = InstallationManager()
 async def index_handler(request):
     """Serve index.html"""
     html_file = Path(__file__).parent / 'web-installer.html'
+    if not html_file.exists():
+        return web.Response(text="web-installer.html not found", status=404)
     return web.FileResponse(html_file)
 
 async def websocket_handler(request):
@@ -177,33 +209,47 @@ async def websocket_handler(request):
         
         # Listen for messages
         async for msg in ws:
-            if msg.type == aiohttp.WSMsgType.TEXT:
-                data = json.loads(msg.data)
-                
-                if data['action'] == 'start_install':
-                    db_password = data.get('db_password')
-                    apex_password = data.get('apex_password')
+            if msg.type == web.WSMsgType.TEXT:
+                try:
+                    data = json.loads(msg.data)
                     
-                    if not db_password or not apex_password:
+                    if data['action'] == 'start_install':
+                        db_password = data.get('db_password', '')
+                        apex_password = data.get('apex_password', '')
+                        
+                        if not db_password or not apex_password:
+                            await ws.send_json({
+                                'type': 'error',
+                                'data': 'Both passwords are required'
+                            })
+                            continue
+                        
+                        if len(db_password) < 8 or len(apex_password) < 8:
+                            await ws.send_json({
+                                'type': 'error',
+                                'data': 'Passwords must be at least 8 characters'
+                            })
+                            continue
+                        
+                        # Start installation in background
+                        asyncio.create_task(
+                            manager.start_installation(db_password, apex_password)
+                        )
+                    
+                    elif data['action'] == 'get_status':
+                        status = await manager.get_status()
                         await ws.send_json({
-                            'type': 'error',
-                            'data': 'Passwords are required'
+                            'type': 'status',
+                            'data': status
                         })
-                        continue
-                    
-                    # Start installation in background
-                    asyncio.create_task(
-                        manager.start_installation(db_password, apex_password)
-                    )
                 
-                elif data['action'] == 'get_status':
-                    status = await manager.get_status()
+                except json.JSONDecodeError:
                     await ws.send_json({
-                        'type': 'status',
-                        'data': status
+                        'type': 'error',
+                        'data': 'Invalid JSON message'
                     })
             
-            elif msg.type == aiohttp.WSMsgType.ERROR:
+            elif msg.type == web.WSMsgType.ERROR:
                 print(f'WebSocket error: {ws.exception()}')
     
     finally:
@@ -245,4 +291,4 @@ if __name__ == '__main__':
     print(f"  Open this URL in your browser to start installation")
     print("=" * 70)
     
-    web.run_app(app, host=HOST, port=PORT)
+    web.run_app(app, host=HOST, port=PORT, print=None)
