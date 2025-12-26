@@ -2517,18 +2517,17 @@ WEBEOF
 }
 
 #═══════════════════════════════════════════════════════════════════════════════
-# CREATE DOCUMENTATION
+# CREATE DOCUMENTATION (FIXED)
 #═══════════════════════════════════════════════════════════════════════════════
 create_documentation() {
     log "Creating documentation..."
     
-    cat > "$PROJECT_DIR/README.md" << 'READMEEOF'
+    cat > "$PROJECT_DIR/README.md" << 'DOCEOF'
 # Oracle APEX v4.3.0 - Complete Installation
 
 ## Installation Information
 
 - **Version:** 4.3.0
-- **Installed:** $(date)
 - **Installation Directory:** ~/oracle-apex-complete
 - **Database:** Oracle XE 21c
 - **APEX Version:** Latest
@@ -2550,8 +2549,123 @@ create_documentation() {
 ## 🛠️ Management Commands
 
 ### Start Oracle APEX
-```bash
+\`\`\`bash
 bash ~/oracle-apex-complete/scripts/start.sh
+\`\`\`
+
+### Stop Oracle APEX
+\`\`\`bash
+bash ~/oracle-apex-complete/scripts/stop.sh
+\`\`\`
+
+### Restart Oracle APEX
+\`\`\`bash
+bash ~/oracle-apex-complete/scripts/restart.sh
+\`\`\`
+
+### Fix Error 571/574/500
+\`\`\`bash
+bash ~/oracle-apex-complete/scripts/fix.sh
+\`\`\`
+
+### Check Status
+\`\`\`bash
+bash ~/oracle-apex-complete/scripts/status.sh
+\`\`\`
+
+### View Logs
+\`\`\`bash
+bash ~/oracle-apex-complete/scripts/logs.sh
+\`\`\`
+
+### Manage DBeaver
+\`\`\`bash
+bash ~/oracle-apex-complete/scripts/dbeaver.sh install
+bash ~/oracle-apex-complete/scripts/dbeaver.sh remove
+\`\`\`
+
+## 📁 Directory Structure
+
+\`\`\`
+~/oracle-apex-complete/
+├── apex/                  # Oracle APEX installation files
+├── ords/                  # Oracle ORDS installation
+├── ords_config/           # ORDS configuration
+├── images/                # APEX images directory
+├── scripts/               # Management scripts
+├── downloads/             # Downloaded files
+├── logs/                  # Log files
+├── web-installer/         # Web installer files
+├── docker-compose.yml     # Docker configuration
+├── install.log            # Installation log
+├── .db_password          # Database password (secure)
+└── .apex_password        # APEX admin password (secure)
+\`\`\`
+
+## 🔧 Troubleshooting
+
+### Error 571 - Database Connection Error
+\`\`\`bash
+bash ~/oracle-apex-complete/scripts/fix.sh
+\`\`\`
+
+### ORDS Not Starting
+\`\`\`bash
+# Check logs
+tail -100 ~/oracle-apex-complete/logs/ords.log
+
+# Restart
+bash ~/oracle-apex-complete/scripts/restart.sh
+\`\`\`
+
+### Database Not Responding
+\`\`\`bash
+# Check container
+docker ps -a
+
+# View logs
+docker logs oracle-apex-db | tail -50
+
+# Restart
+bash ~/oracle-apex-complete/scripts/start.sh
+\`\`\`
+
+## 📊 System Requirements
+
+- Docker & Docker Compose
+- Java 17+
+- 2GB+ RAM
+- 20GB+ Disk Space
+- Linux/macOS/WSL2
+
+## 📝 Notes
+
+- All passwords are stored securely
+- Database is automatically backed up in Docker volumes
+- Systemd service can be enabled for auto-start on boot
+- DBeaver can be installed separately for database management
+
+## 🔐 Security
+
+- Change default ADMIN password on first login
+- Use strong passwords (8+ characters)
+- Keep system updated
+- Regular backups recommended
+
+## 📞 Support
+
+For issues and updates, visit:
+- GitHub: https://github.com/KaizenixCore/oracle-apex-installer/
+- Project: KaizenixCore
+
+---
+
+Created by Peyman Rasouli
+License: MIT
+DOCEOF
+
+    log "✅ Documentation created"
+}
 #═══════════════════════════════════════════════════════════════════════════════
 # MAIN FUNCTION - COMPLETE FLOW
 #═══════════════════════════════════════════════════════════════════════════════
