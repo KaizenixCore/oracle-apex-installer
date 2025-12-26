@@ -1,9 +1,0 @@
-cd ~/oracle-apex-installer
-
-# ساخت فایل .nojekyll
-touch .nojekyll
-
-# Commit
-git add .nojekyll
-git commit -m "Add .nojekyll to fix GitHub Pages"
-git push origin main
