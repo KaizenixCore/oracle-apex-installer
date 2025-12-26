@@ -2753,7 +2753,5 @@ log "Version: $VERSION"
 log "OS: $OS_TYPE"
 log "Home: $HOME"
 log ""
-
 main "$@"
-
 log "Application finished"
