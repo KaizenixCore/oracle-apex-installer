@@ -9,14 +9,14 @@
 #  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝
 #
 #  ╔═══════════════════════════════════════════════════════════════════════════╗
-#  ║     ORACLE APEX GUI INSTALLER v4.0.0 - KAIZENIXCORE                       ║
+#  ║     ORACLE APEX GUI INSTALLER v1.1.0 - KAIZENIXCORE                       ║
 #  ╠═══════════════════════════════════════════════════════════════════════════╣
 #  ║  Created by : Peyman Rasouli                                              ║
 #  ║  Project    : KaizenixCore                                                ║
 #  ║  GitHub     : https://github.com/KaizenixCore/oracle-apex-installer/      ║
 #  ║  License    : MIT                                                         ║
 #  ╠═══════════════════════════════════════════════════════════════════════════╣
-#  ║  ✅ v4.0.0 FEATURES:                                                      ║
+#  ║  ✅ v1.1.0 FEATURES:                                                      ║
 #  ║     - Beautiful Modern UI with Zenity/YAD                                 ║
 #  ║     - Cross-Platform: Linux, macOS, Windows (WSL)                         ║
 #  ║     - APEX Images Fix - SOLVED                                            ║
@@ -62,7 +62,7 @@ declare -A LANG_EN=(
     ["title"]="Oracle APEX Installer"
     ["subtitle"]="KaizenixCore Edition v4.0"
     ["welcome_title"]="🚀 Welcome to Oracle APEX Ultimate Installer"
-    ["welcome"]="<b>Oracle APEX Ultimate Installer v4.0.0</b>\n\n<b>This will install:</b>\n• Oracle APEX (Latest Version)\n• Oracle ORDS (Latest Version)  \n• Oracle XE 21c Database\n\n<b>Features:</b>\n✅ Automatic configuration\n✅ Error auto-fix (574/571/500)\n✅ APEX images auto-setup\n✅ Management GUI included\n\n<b>Created by:</b> Peyman Rasouli\n<b>Project:</b> KaizenixCore\n\nClick <b>Continue</b> to start installation."
+    ["welcome"]="<b>Oracle APEX Ultimate Installer v1.1.0</b>\n\n<b>This will install:</b>\n• Oracle APEX (Latest Version)\n• Oracle ORDS (Latest Version)  \n• Oracle XE 21c Database\n\n<b>Features:</b>\n✅ Automatic configuration\n✅ Error auto-fix (574/571/500)\n✅ APEX images auto-setup\n✅ Management GUI included\n\n<b>Created by:</b> Peyman Rasouli\n<b>Project:</b> KaizenixCore\n\nClick <b>Continue</b> to start installation."
     ["enter_passwords"]="🔐 Enter Passwords"
     ["oracle_pass"]="Oracle Database Password:"
     ["apex_pass"]="APEX Admin Password:"
@@ -160,7 +160,7 @@ declare -A LANG_DE=(
     ["title"]="Oracle APEX Installer"
     ["subtitle"]="KaizenixCore Edition v4.0"
     ["welcome_title"]="🚀 Willkommen beim Oracle APEX Installer"
-    ["welcome"]="<b>Oracle APEX Ultimate Installer v4.0.0</b>\n\n<b>Dies wird installieren:</b>\n• Oracle APEX (Neueste Version)\n• Oracle ORDS (Neueste Version)\n• Oracle XE 21c Datenbank\n\n<b>Funktionen:</b>\n✅ Automatische Konfiguration\n✅ Auto-Fix für Fehler (574/571/500)\n✅ APEX Images Auto-Setup\n✅ Management GUI enthalten\n\n<b>Erstellt von:</b> Peyman Rasouli\n<b>Projekt:</b> KaizenixCore\n\nKlicken Sie <b>Weiter</b> um die Installation zu starten."
+    ["welcome"]="<b>Oracle APEX Ultimate Installer v1.1.0</b>\n\n<b>Dies wird installieren:</b>\n• Oracle APEX (Neueste Version)\n• Oracle ORDS (Neueste Version)\n• Oracle XE 21c Datenbank\n\n<b>Funktionen:</b>\n✅ Automatische Konfiguration\n✅ Auto-Fix für Fehler (574/571/500)\n✅ APEX Images Auto-Setup\n✅ Management GUI enthalten\n\n<b>Erstellt von:</b> Peyman Rasouli\n<b>Projekt:</b> KaizenixCore\n\nKlicken Sie <b>Weiter</b> um die Installation zu starten."
     ["enter_passwords"]="🔐 Passwörter eingeben"
     ["oracle_pass"]="Oracle Database Passwort:"
     ["apex_pass"]="APEX Admin Passwort:"
@@ -751,7 +751,7 @@ fi
 FIXEOF
     chmod +x "$SCRIPTS_DIR/fix.sh"
 
-    # GUI LAUNCHER
+    # GUI LAUNCHER - FIXED VERSION
     cat > "$SCRIPTS_DIR/launch-gui.sh" << 'GUIEOF'
 #!/bin/bash
 PROJECT_DIR="$HOME/oracle-apex-complete"
@@ -772,15 +772,16 @@ while true; do
     if [ "$GUI" = "yad" ]; then
         CHOICE=$(yad --list --title="Oracle APEX Manager $ICON" \
             --text="<b>Status:</b> Database=$DB_RUN, ORDS=$ORDS_RUN\n\n<b>Select action:</b>" \
-            --radiolist --column="" --column="id" --column="Action" \
-            TRUE start "▶️  Start Services" \
-            FALSE stop "⏹️  Stop Services" \
-            FALSE fix "🔧  Fix Problems" \
-            FALSE status "📊  Check Status" \
-            FALSE open "🌐  Open Browser" \
-            FALSE logs "📜  View Logs" \
-            FALSE exit "❌  Exit" \
-            --hide-column=2 --print-column=2 --width=500 --height=450 --center --borders=20 2>/dev/null) || true
+            --column="ID" --column="Action" \
+            "start" "▶️  Start Services" \
+            "stop" "⏹️  Stop Services" \
+            "fix" "🔧  Fix Problems" \
+            "status" "📊  Check Status" \
+            "open" "🌐  Open Admin Panel" \
+            "login" "🔑  Open Login Page" \
+            "logs" "📜  View Logs" \
+            "exit" "❌  Exit" \
+            --width=500 --height=450 --center --borders=20 2>/dev/null) || true
     else
         CHOICE=$(zenity --list --title="Oracle APEX Manager $ICON" \
             --text="Status: Database=$DB_RUN, ORDS=$ORDS_RUN\n\nSelect action:" \
@@ -798,13 +799,14 @@ while true; do
     [ -z "$CHOICE" ] && exit 0
 
     case "$CHOICE" in
-        start) bash "$SCRIPTS_DIR/start.sh" ;;
-        stop) bash "$SCRIPTS_DIR/stop.sh" ;;
-        fix) bash "$SCRIPTS_DIR/fix.sh" ;;
-        status) bash "$SCRIPTS_DIR/status.sh"; read -p "Press Enter..." ;;
-        open) xdg-open "http://localhost:8080/ords/apex_admin" 2>/dev/null || true ;;
-        logs) tail -100 "$PROJECT_DIR/logs/ords.log" 2>/dev/null | less ;;
-        exit) exit 0 ;;
+        "start") bash "$SCRIPTS_DIR/start.sh" ;;
+        "stop") bash "$SCRIPTS_DIR/stop.sh" ;;
+        "fix") bash "$SCRIPTS_DIR/fix.sh" ;;
+        "status") bash "$SCRIPTS_DIR/status.sh"; read -p "Press Enter..." ;;
+        "open") xdg-open "http://localhost:8080/ords/apex_admin" 2>/dev/null || true ;;
+        "login") xdg-open "http://localhost:8080/ords/f?p=4550" 2>/dev/null || true ;;
+        "logs") tail -100 "$PROJECT_DIR/logs/ords.log" 2>/dev/null | less ;;
+        "exit") exit 0 ;;
     esac
 done
 GUIEOF
@@ -1174,6 +1176,7 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 BEGIN
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
+    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('WALLET_TYPE', 'NONE');
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('RESTFUL_SERVICES_ENABLED', 'Y');
     ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
     BEGIN
@@ -1231,6 +1234,7 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
     update_progress 75 "$(get_text step) 18/22: $(get_text configuring_ords)"
     if [ -n "$ORDS_BIN" ]; then
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.http.port "$ORDS_PORT" >> "$INSTALL_LOG" 2>&1 || true
+        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set security.requestValidationFunction "wwv_flow_epg_include_modules.authorize" >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.context.path /ords >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.path "$IMAGES_DIR" >> "$INSTALL_LOG" 2>&1 || true
