@@ -2807,42 +2807,134 @@ WEBSTARTEOF
     log "✅ Web installer created"
 }
 #═══════════════════════════════════════════════════════════════════════════════
-# CREATE DOCUMENTATION
+# CREATE DOCUMENTATION - FIXED VERSION
 #═══════════════════════════════════════════════════════════════════════════════
 create_documentation() {
     log "Creating documentation..."
     
+    # Ensure directory exists
+    mkdir -p "$PROJECT_DIR" 2>/dev/null || true
+    
+    # Create README file
     cat > "$PROJECT_DIR/README.md" << 'DOCEOF'
 # Oracle APEX v4.3.1 - Complete Installation
 
-## 📋 Installation Information
+## Installation Information
 
 | Item | Value |
 |------|-------|
-| **Version** | 4.3.1 |
-| **Installation Directory** | ~/oracle-apex-complete |
-| **Database** | Oracle XE 21c |
-| **APEX Version** | Latest |
-| **ORDS Version** | Latest |
+| Version | 4.3.1 |
+| Installation Directory | ~/oracle-apex-complete |
+| Database | Oracle XE 21c |
+| APEX Version | Latest |
+| ORDS Version | Latest |
 
-## 🌐 Access URLs
+## Access URLs
 
 | Service | URL |
 |---------|-----|
-| **Admin Panel** | http://localhost:8080/ords/apex_admin |
-| **Login Page** | http://localhost:8080/ords/f?p=4550 |
-| **SQL Workshop** | http://localhost:8080/ords/sql |
-| **REST API** | http://localhost:8080/ords/ |
-| **Images** | http://localhost:8080/i/ |
+| Admin Panel | http://localhost:8080/ords/apex_admin |
+| Login Page | http://localhost:8080/ords/f?p=4550 |
+| SQL Workshop | http://localhost:8080/ords/sql |
+| REST API | http://localhost:8080/ords/ |
+| Images | http://localhost:8080/i/ |
 
-## 📋 Default Credentials
+## Default Credentials
 
-- **Workspace:** INTERNAL
-- **Username:** ADMIN
-- **Password:** (your configured password)
+- Workspace: INTERNAL
+- Username: ADMIN
+- Password: (your configured password)
 
-## 🛠️ Management Commands
+## Management Commands
 
-### Start Oracle APEX
-```bash
-bash ~/oracle-apex-complete/scripts/start.sh
+Start Oracle APEX:
+  bash ~/oracle-apex-complete/scripts/start.sh
+
+Stop Oracle APEX:
+  bash ~/oracle-apex-complete/scripts/stop.sh
+
+Restart Oracle APEX:
+  bash ~/oracle-apex-complete/scripts/restart.sh
+
+Fix Error 571/574/500:
+  bash ~/oracle-apex-complete/scripts/fix.sh
+
+Check Status:
+  bash ~/oracle-apex-complete/scripts/status.sh
+
+View Logs:
+  bash ~/oracle-apex-complete/scripts/logs.sh
+
+## DBeaver Management
+
+Install DBeaver:
+  bash ~/oracle-apex-complete/scripts/dbeaver.sh install
+
+Remove DBeaver:
+  bash ~/oracle-apex-complete/scripts/dbeaver.sh remove
+
+## Directory Structure
+
+~/oracle-apex-complete/
+  apex/                  - Oracle APEX installation files
+  ords/                  - Oracle ORDS installation
+  ords_config/           - ORDS configuration
+  images/                - APEX images directory
+  scripts/               - Management scripts
+  downloads/             - Downloaded files
+  logs/                  - Log files
+  web-installer/         - Web installer files
+  docker-compose.yml     - Docker configuration
+  install.log            - Installation log
+
+## Troubleshooting
+
+Error 571 - Database Connection Error:
+  bash ~/oracle-apex-complete/scripts/fix.sh
+
+Error 404 - Page Not Found:
+  bash ~/oracle-apex-complete/scripts/restart.sh
+
+Error 500 - Internal Server Error:
+  tail -100 ~/oracle-apex-complete/logs/ords.log
+  bash ~/oracle-apex-complete/scripts/fix.sh
+
+Error 504 - Gateway Timeout:
+  docker logs oracle-apex-db | tail -50
+  bash ~/oracle-apex-complete/scripts/restart.sh
+
+Permission Denied:
+  sudo chown -R $USER:$(id -gn) ~/oracle-apex-complete
+  chmod -R 755 ~/oracle-apex-complete
+
+## Docker Commands
+
+View container status:
+  docker ps -a --filter "name=oracle-apex-db"
+
+View container logs:
+  docker logs oracle-apex-db
+
+Restart container:
+  docker restart oracle-apex-db
+
+## System Requirements
+
+- RAM: 4GB minimum (8GB recommended)
+- Disk Space: 20GB
+- Docker: 20.x or later
+- Java: 17 or later
+- OS: Linux/macOS/WSL2
+
+## Support
+
+GitHub: https://github.com/KaizenixCore/oracle-apex-installer/
+Project: KaizenixCore
+
+Created by Peyman Rasouli
+License: MIT
+Version: 4.3.1
+DOCEOF
+
+    log "Documentation created at $PROJECT_DIR/README.md"
+}
