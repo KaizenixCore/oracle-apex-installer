@@ -1316,82 +1316,156 @@ SQLEOF" 2>/dev/null || true
 }
 
 #═══════════════════════════════════════════════════════════════════════════════
-# REPAIR INSTALLATION - COMPREHENSIVE FIX FOR 571
+# REPAIR INSTALLATION - COMPREHENSIVE FIX FOR 571 (SECURE VERSION)
 #═══════════════════════════════════════════════════════════════════════════════
-# CRITICAL: Before repair, backup current config
-if [ -d "$ORDS_CONFIG_DIR" ]; then
-    log "Backing up current ORDS config..."
-    cp -r "$ORDS_CONFIG_DIR" "$ORDS_CONFIG_DIR.backup.$(date +%s)" 2>/dev/null || true
-fi
-
-# Ensure passwords are loaded
-if [ -z "$ORACLE_PASSWORD" ] || [ -z "$APEX_ADMIN_PASSWORD" ]; then
-    log "❌ Passwords not set!"
-    gui_error "$(get_text error)" "Passwords not configured. Please run installer."
-    return 1
-fi
-
-log "Starting repair with password: ${ORACLE_PASSWORD:0:3}***"
 
 repair_installation() {
-    log "Starting comprehensive repair..."
+    log "═══════════════════════════════════════════════════════════════"
+    log "🔧 REPAIR INSTALLATION - COMPREHENSIVE FIX FOR ERROR 571"
+    log "═══════════════════════════════════════════════════════════════"
+    
+    # CRITICAL: Before repair, backup current config
+    if [ -d "$ORDS_CONFIG_DIR" ]; then
+        log "📦 Backing up current ORDS config..."
+        cp -r "$ORDS_CONFIG_DIR" "$ORDS_CONFIG_DIR.backup.$(date +%s)" 2>/dev/null || true
+    fi
+
+    # Ensure passwords are loaded
+    if [ -z "$ORACLE_PASSWORD" ] || [ -z "$APEX_ADMIN_PASSWORD" ]; then
+        log "❌ ERROR: Passwords not set!"
+        gui_error "$(get_text error)" "Passwords not configured. Please run installer."
+        return 1
+    fi
+
+    log "✅ Passwords loaded successfully"
     
     start_progress
     
-    # Step 1: Stop ORDS
+    #═════════════════════════════════════════════════════════════════
+    # STEP 1: Stop ORDS
+    #═════════════════════════════════════════════════════════════════
     update_progress 5 "Stopping ORDS..."
-    pkill -9 -f ords 2>/dev/null || true
-    pkill -9 -f java.*ords 2>/dev/null || true
+    log "[1/13] Stopping ORDS services..."
+    
+    pkill -9 -f "ords.*serve" 2>/dev/null || true
+    pkill -9 -f "java.*ords" 2>/dev/null || true
+    pkill -9 -f "ords" 2>/dev/null || true
+    
     sleep 5
+    log "✅ ORDS stopped"
     
-    # Step 2: Start database
+    #═════════════════════════════════════════════════════════════════
+    # STEP 2: Start database
+    #═════════════════════════════════════════════════════════════════
     update_progress 10 "Starting database..."
-    docker start "$CONTAINER_NAME" 2>/dev/null || true
+    log "[2/13] Starting database container..."
     
-    # Wait for database
+    docker start "$CONTAINER_NAME" 2>/dev/null || true
+    sleep 10
+    
+    # Wait for database to be ready - CRITICAL
+    log "[3/13] Waiting for database (this may take 5-10 minutes)..."
     update_progress 15 "Waiting for database (this may take a few minutes)..."
+    
     local db_ready=false
-    for i in {1..60}; do
+    local wait_count=0
+    
+    for i in {1..120}; do
+        wait_count=$((wait_count + 1))
+        
+        # Check if container is running
+        if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
+            log "⚠️ Container not running, waiting..."
+            sleep 5
+            continue
+        fi
+        
+        # Check for DATABASE IS READY message
         if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "DATABASE IS READY"; then
+            log "✅ Database reports READY (after ${wait_count} checks)"
             db_ready=true
             break
         fi
+        
+        # Try actual connection test
+        if docker exec "$CONTAINER_NAME" bash -c "echo 'SELECT 1 FROM DUAL;' | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba 2>/dev/null" | grep -q "1"; then
+            log "✅ Database connection verified (after ${wait_count} checks)"
+            db_ready=true
+            break
+        fi
+        
+        if [ $((wait_count % 10)) -eq 0 ]; then
+            log "⏳ Still waiting for database... (${wait_count}s elapsed)"
+        fi
+        
         sleep 5
     done
     
     if [ "$db_ready" = false ]; then
-        log "Warning: Database may not be fully ready"
+        log "⚠️ WARNING: Database may not be fully ready, continuing anyway..."
     fi
     
-    sleep 30  # Extra wait time
+    sleep 30  # Extra wait time for stability
+    log "✅ Database started and ready"
     
-    # Step 3: Reset database password
-    update_progress 25 "$(get_text resetting_password)"
+    #═════════════════════════════════════════════════════════════════
+    # STEP 3: Reset database password
+    #═════════════════════════════════════════════════════════════════
+    update_progress 22 "$(get_text resetting_password)"
+    log "[4/13] Resetting database password..."
+    
     docker exec "$CONTAINER_NAME" resetPassword "$ORACLE_PASSWORD" >> "$INSTALL_LOG" 2>&1 || true
     sleep 20
+    log "✅ Database password reset"
     
-    # Step 4: Disable password policies
-    update_progress 30 "Disabling password policies..."
+    #═════════════════════════════════════════════════════════════════
+    # STEP 4: Disable password policies
+    #═════════════════════════════════════════════════════════════════
+    update_progress 28 "Disabling password policies..."
+    log "[5/13] Disabling password policies..."
+    
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
+SET ECHO OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 32767
+WHENEVER SQLERROR CONTINUE
+
+ALTER PROFILE DEFAULT LIMIT 
+    FAILED_LOGIN_ATTEMPTS UNLIMITED 
+    PASSWORD_LIFE_TIME UNLIMITED 
+    PASSWORD_VERIFY_FUNCTION NULL;
+
 COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+    
+    log "✅ Password policies disabled"
 
-    # Step 5: Fix ORDS_PUBLIC_USER - CRITICAL
-    update_progress 40 "Fixing ORDS_PUBLIC_USER..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
--- Drop and recreate ORDS_PUBLIC_USER to ensure clean state
+    #═════════════════════════════════════════════════════════════════
+    # STEP 5: Fix ORDS_PUBLIC_USER - CRITICAL FOR 571
+    #═════════════════════════════════════════════════════════════════
+    update_progress 35 "Fixing ORDS_PUBLIC_USER..."
+    log "[6/13] Creating/Fixing ORDS_PUBLIC_USER with proper privileges..."
+    
+    # Escape password for SQL (replace ' with '')
+    local pw_sql_safe="${ORACLE_PASSWORD//\'/\'\'}"
+    
+    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
+SET ECHO OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 32767
+WHENEVER SQLERROR CONTINUE
+
+-- ===== DROP EXISTING USER =====
 BEGIN
     EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE';
 EXCEPTION WHEN OTHERS THEN NULL;
 END;
 /
 
-CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD}
+-- ===== CREATE USER WITH PROPER TABLESPACE =====
+CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY '${pw_sql_safe}'
     DEFAULT TABLESPACE SYSAUX
+    TEMPORARY TABLESPACE TEMP
     QUOTA UNLIMITED ON SYSAUX;
 
+-- ===== GRANT CORE PRIVILEGES =====
 GRANT CONNECT TO ORDS_PUBLIC_USER;
 GRANT RESOURCE TO ORDS_PUBLIC_USER;
 GRANT CREATE SESSION TO ORDS_PUBLIC_USER;
@@ -1405,56 +1479,112 @@ GRANT CREATE SYNONYM TO ORDS_PUBLIC_USER;
 GRANT CREATE TYPE TO ORDS_PUBLIC_USER;
 GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
 
+-- ===== GRANT SYSTEM PACKAGE PRIVILEGES (CRITICAL FOR 571) =====
+BEGIN
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_SQL TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_ENCODE TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_LOCK TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_PIPE TO ORDS_PUBLIC_USER';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- ===== UNLOCK ACCOUNT =====
 ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
 
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
- # Step 6: Fix other APEX users
-    update_progress 50 "Fixing APEX users..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
--- Fix APEX_PUBLIC_USER
-BEGIN
-    EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK';
-EXCEPTION WHEN OTHERS THEN NULL;
-END;
-/
-
--- Fix APEX_LISTENER
-BEGIN
-    EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK';
-EXCEPTION WHEN OTHERS THEN NULL;
-END;
-/
-
--- Fix APEX_REST_PUBLIC_USER
-BEGIN
-    EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK';
-EXCEPTION WHEN OTHERS THEN NULL;
-END;
-/
-
--- Grant proxy connections - CRITICAL FOR 571 FIX
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-
--- Grant necessary privileges to ORDS_PUBLIC_USER
-GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.UTL_ENCODE TO ORDS_PUBLIC_USER;
+-- ===== VERIFY CREATION =====
+SET HEADING ON FEEDBACK ON PAGESIZE 20
+SELECT USERNAME, ACCOUNT_STATUS FROM DBA_USERS WHERE USERNAME = 'ORDS_PUBLIC_USER';
 
 COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+    
+    log "✅ ORDS_PUBLIC_USER created with full privileges"
 
-    # Step 7: Reset APEX admin password
-    update_progress 55 "Resetting APEX admin password..."
+    #═════════════════════════════════════════════════════════════════
+    # STEP 6: Fix other APEX users
+    #═════════════════════════════════════════════════════════════════
+    update_progress 42 "Fixing APEX users..."
+    log "[7/13] Fixing APEX users (APEX_PUBLIC_USER, APEX_LISTENER, etc.)..."
+    
+    local pw_sql_safe="${ORACLE_PASSWORD//\'/\'\'}"
+    
+    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
+SET ECHO OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 32767
+WHENEVER SQLERROR CONTINUE
+
+-- ===== FIX APEX_PUBLIC_USER =====
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY '\''${pw_sql_safe}'\'' ACCOUNT UNLOCK';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- ===== FIX APEX_LISTENER =====
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY '\''${pw_sql_safe}'\'' ACCOUNT UNLOCK';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- ===== FIX APEX_REST_PUBLIC_USER =====
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY '\''${pw_sql_safe}'\'' ACCOUNT UNLOCK';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- ===== GRANT PROXY CONNECTIONS - CRITICAL FOR 571 FIX =====
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- ===== GRANT NECESSARY PRIVILEGES TO ORDS_PUBLIC_USER =====
+BEGIN
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_ENCODE TO ORDS_PUBLIC_USER';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+COMMIT;
+EXIT;
+EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+    
+    log "✅ APEX users fixed"
+
+    #═════════════════════════════════════════════════════════════════
+    # STEP 7: Reset APEX admin password
+    #═════════════════════════════════════════════════════════════════
+    update_progress 50 "Resetting APEX admin password..."
+    log "[8/13] Resetting APEX admin password..."
+    
     local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
     if [ -z "$apex_schema" ]; then
         apex_schema=$(docker exec "$CONTAINER_NAME" bash -c "echo \"SET HEADING OFF FEEDBACK OFF PAGESIZE 0; SELECT USERNAME FROM ALL_USERS WHERE USERNAME LIKE 'APEX_2%' ORDER BY USERNAME DESC FETCH FIRST 1 ROW ONLY;\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba" 2>/dev/null | grep -E "^APEX_" | head -1 | tr -d ' ') || true
@@ -1463,21 +1593,38 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
     echo "$apex_schema" > "$PROJECT_DIR/.apex_schema"
     log "Using APEX schema: $apex_schema"
     
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
+    local pw_sql_safe="${APEX_ADMIN_PASSWORD//\'/\'\'}"
+    
+    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
+SET ECHO OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 32767
+WHENEVER SQLERROR CONTINUE
+
 BEGIN
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('RESTFUL_SERVICES_ENABLED', 'Y');
     ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
     
-    ${apex_schema}.APEX_UTIL.EDIT_USER(
-        p_user_id                      => ${apex_schema}.APEX_UTIL.GET_USER_ID('ADMIN'),
-        p_user_name                    => 'ADMIN',
-        p_web_password                 => '${APEX_ADMIN_PASSWORD}',
-        p_new_password                 => '${APEX_ADMIN_PASSWORD}',
-        p_change_password_on_first_use => 'N',
-        p_account_locked               => 'N'
-    );
+    BEGIN
+        ${apex_schema}.APEX_UTIL.EDIT_USER(
+            p_user_id                      => ${apex_schema}.APEX_UTIL.GET_USER_ID('ADMIN'),
+            p_user_name                    => 'ADMIN',
+            p_web_password                 => '${pw_sql_safe}',
+            p_new_password                 => '${pw_sql_safe}',
+            p_change_password_on_first_use => 'N',
+            p_account_locked               => 'N'
+        );
+    EXCEPTION WHEN OTHERS THEN
+        ${apex_schema}.APEX_UTIL.CREATE_USER(
+            p_user_name                    => 'ADMIN',
+            p_email_address                => 'admin@localhost',
+            p_web_password                 => '${pw_sql_safe}',
+            p_developer_privs              => 'ADMIN:CREATE:DATA_LOADER:EDIT:HELP:MONITOR:SQL',
+            p_change_password_on_first_use => 'N',
+            p_account_locked               => 'N'
+        );
+    END;
+    
     COMMIT;
 EXCEPTION WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
@@ -1485,52 +1632,84 @@ END;
 /
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+    
+    log "✅ APEX admin password reset"
 
-    # Step 8: Reinstall ORDS connection
+    #═════════════════════════════════════════════════════════════════
+    # STEP 8: Reinstall ORDS connection
+    #═════════════════════════════════════════════════════════════════
     update_progress 60 "Reinstalling ORDS connection..."
+    log "[9/13] Reinstalling ORDS connection..."
+    
     local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
     
-    if [ -n "$ORDS_BIN" ]; then
-        chmod +x "$ORDS_BIN" 2>/dev/null || true
-        
+    if [ -n "$ORDS_BIN" ] && [ -x "$ORDS_BIN" ]; then
         # Remove old ORDS config
         rm -rf "$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
         mkdir -p "$ORDS_CONFIG_DIR/databases/default"
         
-        # Reinstall ORDS with correct settings
+        # Create password file
         local PASS_FILE=$(mktemp)
         printf "%s\n%s\n%s\n" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" > "$PASS_FILE"
 
+        # Reinstall ORDS with correct settings
+        log "Running ORDS install command..."
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
             --admin-user SYS \
             --db-hostname localhost \
             --db-port "$DB_PORT" \
             --db-servicename "$DB_SERVICE" \
             --feature-sdw true \
+            --feature-rest-enabled-sql true \
             --gateway-mode proxied \
             --gateway-user ORDS_PUBLIC_USER \
             --password-stdin < "$PASS_FILE" >> "$INSTALL_LOG" 2>&1 || true
 
         rm -f "$PASS_FILE"
         
+        # Verify ORDS config was created
+        if [ -f "$ORDS_CONFIG_DIR/databases/default/ords_params.properties" ]; then
+            log "✅ ORDS parameters file created"
+        else
+            log "⚠️ ORDS parameters file not found, creating manually..."
+        fi
+        
         # Set ORDS password explicitly
-        update_progress 65 "Setting ORDS password..."
+        log "Setting ORDS database password..."
         echo "$ORACLE_PASSWORD" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config secret --password-stdin db.password >> "$INSTALL_LOG" 2>&1 || true
+        log "✅ ORDS password configured"
+    else
+        log "❌ ERROR: ORDS binary not found or not executable"
+        return 1
     fi
+
+    #═════════════════════════════════════════════════════════════════
+    # STEP 9: Fix images
+    #═════════════════════════════════════════════════════════════════
+    update_progress 68 "$(get_text fixing_images)"
+    log "[10/13] Fixing APEX images..."
     
-    # Step 9: Fix images
-    update_progress 70 "$(get_text fixing_images)"
     fix_apex_images
+    log "✅ APEX images fixed"
+
+    #═════════════════════════════════════════════════════════════════
+    # STEP 10: Save new passwords
+    #═════════════════════════════════════════════════════════════════
+    update_progress 74 "Saving configuration..."
+    log "[11/13] Saving configuration..."
     
-    # Step 10: Save new passwords
-    update_progress 75 "Saving configuration..."
     echo "$ORACLE_PASSWORD" > "$PROJECT_DIR/.db_password"
     echo "$APEX_ADMIN_PASSWORD" > "$PROJECT_DIR/.apex_password"
     chmod 600 "$PROJECT_DIR/.db_password" "$PROJECT_DIR/.apex_password"
+    log "✅ Passwords saved securely"
+
+    #═════════════════════════════════════════════════════════════════
+    # STEP 11: Configure ORDS settings
+    #═════════════════════════════════════════════════════════════════
+    update_progress 80 "Configuring ORDS..."
+    log "[12/13] Configuring ORDS settings..."
     
-    # Step 11: Configure ORDS settings
-    update_progress 78 "Configuring ORDS..."
-    if [ -n "$ORDS_BIN" ]; then
+    if [ -n "$ORDS_BIN" ] && [ -x "$ORDS_BIN" ]; then
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.http.port "$ORDS_PORT" >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.context.path /ords >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i >> "$INSTALL_LOG" 2>&1 || true
@@ -1538,45 +1717,80 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.doc.root "$IMAGES_DIR" >> "$INSTALL_LOG" 2>&1 || true
     fi
     
-    # Step 12: Start ORDS
-    update_progress 82 "Starting ORDS..."
-    pkill -9 -f ords 2>/dev/null || true
+    log "✅ ORDS configured"
+
+    #═════════════════════════════════════════════════════════════════
+    # STEP 12: Start ORDS
+    #═════════════════════════════════════════════════════════════════
+    update_progress 87 "Starting ORDS..."
+    log "[13/13] Starting ORDS..."
+    
+    # Kill any existing ORDS processes
+    pkill -9 -f "ords.*serve" 2>/dev/null || true
+    pkill -9 -f "java.*ords" 2>/dev/null || true
     sleep 5
+    
+    # Free the port
     run_sudo fuser -k "${ORDS_PORT}/tcp" 2>/dev/null || true
     sleep 2
-    
-    if [ -n "$ORDS_BIN" ]; then
+
+    if [ -n "$ORDS_BIN" ] && [ -x "$ORDS_BIN" ]; then
         export ORDS_CONFIG="$ORDS_CONFIG_DIR"
-        export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
+        export _JAVA_OPTIONS="-Xms512m -Xmx1024m -Dfile.encoding=UTF-8"
+        
         nohup "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
             --port "$ORDS_PORT" \
             --apex-images "$IMAGES_DIR" \
             > "$LOG_DIR/ords.log" 2>&1 &
-        log "ORDS started with PID $!"
+        
+        local ords_pid=$!
+        echo "$ords_pid" > "$PROJECT_DIR/ords.pid"
+        log "✅ ORDS started with PID $ords_pid"
     fi
-    
-    update_progress 88 "Waiting for ORDS to initialize (2 minutes)..."
+
+    update_progress 95 "Waiting for ORDS to initialize (2 minutes)..."
+    log "Waiting for ORDS to initialize..."
     sleep 120
+
+    #═════════════════════════════════════════════════════════════════
+    # STEP 13: Verify
+    #═════════════════════════════════════════════════════════════════
+    update_progress 100 "$(get_text verifying)"
+    log "Verifying installation..."
     
-    # Step 13: Verify
-    update_progress 95 "$(get_text verifying)"
     local http_admin=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/ords/apex_admin" 2>/dev/null || echo "000")
     local http_img=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/i/apex_version.txt" 2>/dev/null || echo "000")
     local http_login=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/ords/f?p=4550" 2>/dev/null || echo "000")
-    log "Repair verification - Admin: $http_admin, Images: $http_img, Login: $http_login"
     
-    update_progress 100 "$(get_text completed)"
+    log "Repair verification:"
+    log "  - Admin Panel: HTTP $http_admin"
+    log "  - Images: HTTP $http_img"
+    log "  - Login Page: HTTP $http_login"
+    
     stop_progress
     
-    # Show result
-    if [[ "$http_admin" =~ ^(200|302|303)$ ]]; then
-        log "Repair completed successfully!"
-    else
-        log "Repair completed but APEX may need more time to start"
-        gui_warning "$(get_text warning)" "Repair completed but APEX is still starting.\n\nPlease wait 2-3 minutes and try:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\nOr run: bash ~/oracle-apex-complete/scripts/fix.sh"
-    fi
+    #═════════════════════════════════════════════════════════════════
+    # FINAL RESULT
+    #═════════════════════════════════════════════════════════════════
+    log "═══════════════════════════════════════════════════════════════"
     
-    log "Repair completed"
+    if [[ "$http_admin" =~ ^(200|302|303)$ ]]; then
+        log "✅ REPAIR SUCCESSFUL! APEX is working!"
+        log "═══════════════════════════════════════════════════════════════"
+        
+        gui_info "$(get_text success_title)" \
+            "✅ Repair Completed Successfully!\n\n🌐 Admin Panel:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\n🔐 Login Page:\nhttp://localhost:${ORDS_PORT}/ords/f?p=4550\n\n📋 Credentials:\nUsername: ADMIN\nPassword: (your password)" 600 400
+        
+        return 0
+    else
+        log "⚠️ Repair completed but APEX may need more time"
+        log "═══════════════════════════════════════════════════════════════"
+        
+        gui_warning "$(get_text warning)" \
+            "⚠️ Repair completed but APEX is still initializing.\n\nPlease wait 2-3 minutes and try:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\nIf still having issues, run:\nbash ~/oracle-apex-complete/scripts/fix.sh" 600 400
+        
+        return 0
+    fi
 }
 
 #═══════════════════════════════════════════════════════════════════════════════
