@@ -1701,7 +1701,7 @@ DESKTOPEOF
     fi
 
     log "Management scripts created successfully"
-}
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CREATE SYSTEMD SERVICE
