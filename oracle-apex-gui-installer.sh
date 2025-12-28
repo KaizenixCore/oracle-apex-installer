@@ -1002,74 +1002,152 @@ remove_dbeaver() {
 }
 
 install_dbeaver() {
-    log "Installing DBeaver..."
+    log "🔍 Installing DBeaver (Detecting distribution)..."
     
-    local dbeaver_installed=false
+    # Check if already installed
+    if command -v dbeaver &> /dev/null || command -v dbeaver-ce &> /dev/null; then
+        log "✅ DBeaver already installed"
+        return 0
+    fi
     
-    case "$OS_TYPE" in
-        linux|wsl)
-            case "$OS_ID" in
-                ubuntu|debian|linuxmint|pop)
-                    # Method 1: Official repository
-                    wget -O - https://dbeaver.io/debs/dbeaver.gpg.key 2>/dev/null | run_sudo gpg --dearmor -o /usr/share/keyrings/dbeaver.gpg 2>/dev/null || true
-                    echo "deb [signed-by=/usr/share/keyrings/dbeaver.gpg] https://dbeaver.io/debs/dbeaver-ce /" | run_sudo tee /etc/apt/sources.list.d/dbeaver.list > /dev/null 2>/dev/null || true
-                    run_sudo apt-get update -qq 2>/dev/null || true
-                    
-                    if run_sudo apt-get install -y dbeaver-ce 2>/dev/null; then
-                        dbeaver_installed=true
-                    else
-                        # Method 2: Direct download
-                        log "Trying direct download method..."
-                        wget -O /tmp/dbeaver.deb "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" 2>/dev/null || true
-                        if [ -f /tmp/dbeaver.deb ]; then
-                            run_sudo dpkg -i /tmp/dbeaver.deb 2>/dev/null || run_sudo apt-get install -f -y 2>/dev/null || true
-                            rm -f /tmp/dbeaver.deb 2>/dev/null || true
-                            dbeaver_installed=true
-                        fi
-                    fi
-                    ;;
-                fedora)
-                    if run_sudo dnf install -y https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm 2>/dev/null; then
-                        dbeaver_installed=true
-                    fi
-                    ;;
-                opensuse*|suse*)
-                    wget -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null || true
-                    if [ -f /tmp/dbeaver.rpm ]; then
-                        run_sudo zypper --non-interactive install -y /tmp/dbeaver.rpm 2>/dev/null || true
-                        rm -f /tmp/dbeaver.rpm 2>/dev/null || true
-                        dbeaver_installed=true
-                    fi
-                    ;;
-                arch|manjaro)
-                    if run_sudo pacman -S --noconfirm dbeaver 2>/dev/null; then
-                        dbeaver_installed=true
-                    fi
-                    ;;
-                *)
-                    # Fallback: Flatpak
-                    if command -v flatpak &> /dev/null; then
-                        flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>/dev/null && dbeaver_installed=true
-                    fi
-                    ;;
-            esac
+    local install_success=false
+    
+    case "$OS_ID" in
+        ubuntu|debian|linuxmint|pop|neon)
+            log "📦 Detected: Debian/Ubuntu-based"
+            
+            # Method 1: Official repository
+            log "Trying official DBeaver repository..."
+            run_sudo sh -c 'echo "deb https://dbeaver.io/debs/dbeaver-ce /" > /etc/apt/sources.list.d/dbeaver.list' 2>/dev/null || true
+            wget -O - https://dbeaver.io/debs/dbeaver.gpg.key 2>/dev/null | run_sudo apt-key add - 2>/dev/null || true
+            
+            run_sudo apt-get update -qq 2>/dev/null || true
+            
+            if run_sudo apt-get install -y dbeaver-ce 2>/dev/null; then
+                install_success=true
+                log "✅ DBeaver installed from official repository"
+            else
+                log "⚠️ Official repo failed, trying direct .deb download..."
+                
+                # Method 2: Direct download
+                local dbeaver_deb="/tmp/dbeaver-ce.deb"
+                wget -q -O "$dbeaver_deb" "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" 2>/dev/null || \
+                curl -L -o "$dbeaver_deb" "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" 2>/dev/null || true
+                
+                if [ -f "$dbeaver_deb" ]; then
+                    run_sudo dpkg -i "$dbeaver_deb" 2>/dev/null || true
+                    run_sudo apt-get install -f -y 2>/dev/null || true
+                    rm -f "$dbeaver_deb"
+                    install_success=true
+                    log "✅ DBeaver installed from direct download"
+                fi
+            fi
             ;;
-        macos)
-            if command -v brew &> /dev/null; then
-                brew install --cask dbeaver-community 2>/dev/null && dbeaver_installed=true
+            
+        fedora)
+            log "📦 Detected: Fedora"
+            
+            if run_sudo dnf install -y https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm 2>/dev/null; then
+                install_success=true
+                log "✅ DBeaver installed"
+            fi
+            ;;
+            
+        rhel|centos|rocky|alma)
+            log "📦 Detected: RHEL/CentOS-based"
+            
+            local rpm_file="/tmp/dbeaver-ce.rpm"
+            wget -q -O "$rpm_file" "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null || \
+            curl -L -o "$rpm_file" "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null || true
+            
+            if [ -f "$rpm_file" ]; then
+                run_sudo yum install -y "$rpm_file" 2>/dev/null || true
+                rm -f "$rpm_file"
+                install_success=true
+                log "✅ DBeaver installed"
+            fi
+            ;;
+            
+        opensuse*|suse*)
+            log "📦 Detected: openSUSE/SUSE"
+            
+            local rpm_file="/tmp/dbeaver-ce.rpm"
+            wget -q -O "$rpm_file" "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null || \
+            curl -L -o "$rpm_file" "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null || true
+            
+            if [ -f "$rpm_file" ]; then
+                run_sudo zypper --non-interactive install -y "$rpm_file" 2>/dev/null || true
+                rm -f "$rpm_file"
+                install_success=true
+                log "✅ DBeaver installed"
+            fi
+            ;;
+            
+        arch|manjaro)
+            log "📦 Detected: Arch/Manjaro"
+            
+            if run_sudo pacman -S --noconfirm dbeaver 2>/dev/null; then
+                install_success=true
+                log "✅ DBeaver installed"
+            fi
+            ;;
+            
+        *)
+            log "📦 Unknown distribution, trying Flatpak/Snap..."
+            
+            # Try Flatpak
+            if command -v flatpak &> /dev/null; then
+                if flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>/dev/null; then
+                    install_success=true
+                    log "✅ DBeaver installed via Flatpak"
+                fi
+            fi
+            
+            # Try Snap
+            if [ "$install_success" = false ] && command -v snap &> /dev/null; then
+                if run_sudo snap install dbeaver-ce 2>/dev/null; then
+                    install_success=true
+                    log "✅ DBeaver installed via Snap"
+                fi
             fi
             ;;
     esac
     
     # Verify installation
-    if command -v dbeaver &> /dev/null || command -v dbeaver-ce &> /dev/null || [ -f /usr/share/applications/dbeaver-ce.desktop ]; then
-        log "DBeaver installation verified successfully"
-        return 0
-    elif [ "$dbeaver_installed" = true ]; then
-        log "DBeaver installed but may need system restart"
+    sleep 2
+    
+    if command -v dbeaver &> /dev/null || command -v dbeaver-ce &> /dev/null || \
+       [ -f /usr/share/applications/dbeaver-ce.desktop ] || \
+       [ -f /usr/share/applications/dbeaver.desktop ] || \
+       flatpak list --app | grep -q "dbeaver"; then
+        
+        log "✅ DBeaver installation verified successfully"
+        
+        # Create desktop shortcut if not exists
+        if [ ! -f "$HOME/.local/share/applications/dbeaver-ce.desktop" ]; then
+            mkdir -p "$HOME/.local/share/applications"
+            cat > "$HOME/.local/share/applications/dbeaver-ce.desktop" << 'DESKTOPEOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DBeaver
+Comment=Universal Database Manager
+Exec=dbeaver %F
+Icon=dbeaver
+Terminal=false
+Categories=Development;Database;IDE;
+Keywords=database;sql;
+MimeType=application/x-dbeaver-project;
+DESKTOPEOF
+            chmod +x "$HOME/.local/share/applications/dbeaver-ce.desktop"
+        fi
+        
+        update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
+        
         return 0
     else
-        log "DBeaver installation may have failed - please install manually from https://dbeaver.io"
+        log "⚠️ DBeaver installation may have failed"
+        log "Please install manually from: https://dbeaver.io/download"
         return 1
     fi
 }
@@ -1240,6 +1318,21 @@ SQLEOF" 2>/dev/null || true
 #═══════════════════════════════════════════════════════════════════════════════
 # REPAIR INSTALLATION - COMPREHENSIVE FIX FOR 571
 #═══════════════════════════════════════════════════════════════════════════════
+# CRITICAL: Before repair, backup current config
+if [ -d "$ORDS_CONFIG_DIR" ]; then
+    log "Backing up current ORDS config..."
+    cp -r "$ORDS_CONFIG_DIR" "$ORDS_CONFIG_DIR.backup.$(date +%s)" 2>/dev/null || true
+fi
+
+# Ensure passwords are loaded
+if [ -z "$ORACLE_PASSWORD" ] || [ -z "$APEX_ADMIN_PASSWORD" ]; then
+    log "❌ Passwords not set!"
+    gui_error "$(get_text error)" "Passwords not configured. Please run installer."
+    return 1
+fi
+
+log "Starting repair with password: ${ORACLE_PASSWORD:0:3}***"
+
 repair_installation() {
     log "Starting comprehensive repair..."
     
@@ -2319,18 +2412,27 @@ EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
     log "REST configured"
 
-    # Step 13: Create ORDS_PUBLIC_USER - CRITICAL FOR 571
-    update_progress 54 "$(get_text step) 13/24: Creating ORDS_PUBLIC_USER..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
--- Drop if exists
-BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+ # Step 13: Create ORDS_PUBLIC_USER - CRITICAL FIX FOR 571
+update_progress 54 "$(get_text step) 13/24: Creating ORDS_PUBLIC_USER..."
+
+docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
+SET ECHO OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 32767
+WHENEVER SQLERROR CONTINUE
+
+-- ===== DROP EXISTING USER =====
+BEGIN
+    EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
 /
 
--- Create user with proper privileges
-CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD}
+-- ===== CREATE USER WITH PROPER TABLESPACE =====
+CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY \"${ORACLE_PASSWORD}\"
     DEFAULT TABLESPACE SYSAUX
+    TEMPORARY TABLESPACE TEMP
     QUOTA UNLIMITED ON SYSAUX;
 
+-- ===== GRANT CORE PRIVILEGES =====
 GRANT CONNECT TO ORDS_PUBLIC_USER;
 GRANT RESOURCE TO ORDS_PUBLIC_USER;
 GRANT CREATE SESSION TO ORDS_PUBLIC_USER;
@@ -2342,14 +2444,43 @@ GRANT CREATE TRIGGER TO ORDS_PUBLIC_USER;
 GRANT CREATE VIEW TO ORDS_PUBLIC_USER;
 GRANT CREATE SYNONYM TO ORDS_PUBLIC_USER;
 GRANT CREATE TYPE TO ORDS_PUBLIC_USER;
+GRANT CREATE DIMENSION TO ORDS_PUBLIC_USER;
+GRANT CREATE OPERATOR TO ORDS_PUBLIC_USER;
 GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
 
+-- ===== GRANT SYSTEM PACKAGE PRIVILEGES (CRITICAL FOR 571) =====
+BEGIN
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_SQL TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_ENCODE TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_LOCK TO ORDS_PUBLIC_USER';
+    EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_PIPE TO ORDS_PUBLIC_USER';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- ===== UNLOCK ACCOUNT =====
 ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
+
+-- ===== VERIFY CREATION =====
+BEGIN
+    FOR r IN (SELECT username FROM all_users WHERE username = 'ORDS_PUBLIC_USER') LOOP
+        DBMS_OUTPUT.PUT_LINE('✅ ORDS_PUBLIC_USER created successfully');
+    END LOOP;
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
 
 COMMIT;
 EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    log "ORDS_PUBLIC_USER created"
+EOSQL" >> "$INSTALL_LOG" 2>&1
+
+log "✅ ORDS_PUBLIC_USER created with full privileges"
 
     # Step 14: Fix APEX users
     update_progress 58 "$(get_text step) 14/24: Fixing APEX users..."
@@ -2428,30 +2559,78 @@ EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
     log "APEX admin created"
 
-    # Step 17: Install ORDS - FIXED gateway-user
-    update_progress 70 "$(get_text step) 17/24: Installing ORDS..."
-    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+# Step 17: Install ORDS - COMPREHENSIVE FIX
+update_progress 70 "$(get_text step) 17/24: Installing ORDS..."
+
+local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+
+if [ -z "$ORDS_BIN" ]; then
+    log "❌ ORDS binary not found!"
+    gui_error "$(get_text error)" "ORDS binary not found in $PROJECT_DIR/ords"
+    return 1
+fi
+
+chmod +x "$ORDS_BIN" 2>/dev/null || true
+
+# Remove old ORDS config completely
+log "Cleaning old ORDS configuration..."
+rm -rf "$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
+rm -rf "$ORDS_CONFIG_DIR/global" 2>/dev/null || true
+rm -f "$ORDS_CONFIG_DIR/settings.xml" 2>/dev/null || true
+
+# Create fresh directories
+mkdir -p "$ORDS_CONFIG_DIR/databases/default"
+mkdir -p "$ORDS_CONFIG_DIR/global"
+
+# Create password file for installation
+local PASS_FILE=$(mktemp)
+printf "%s\n%s\n%s\n" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" > "$PASS_FILE"
+
+log "Installing ORDS with gateway-user: ORDS_PUBLIC_USER"
+
+# CRITICAL: Install ORDS with correct parameters
+"$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
+    --admin-user SYS \
+    --admin-password "$ORACLE_PASSWORD" \
+    --db-hostname localhost \
+    --db-port "$DB_PORT" \
+    --db-servicename "$DB_SERVICE" \
+    --db-username SYS \
+    --feature-sdw true \
+    --feature-rest-enabled-sql true \
+    --gateway-mode proxied \
+    --gateway-user ORDS_PUBLIC_USER \
+    --password-stdin < "$PASS_FILE" >> "$INSTALL_LOG" 2>&1
+
+local ords_install_status=$?
+rm -f "$PASS_FILE"
+
+if [ $ords_install_status -eq 0 ]; then
+    log "✅ ORDS installation successful"
+else
+    log "⚠️ ORDS installation returned status $ords_install_status (continuing...)"
+fi
+
+# Verify ORDS config was created
+if [ ! -f "$ORDS_CONFIG_DIR/databases/default/ords_params.properties" ]; then
+    log "⚠️ ords_params.properties not found, creating manually..."
     
-    if [ -n "$ORDS_BIN" ]; then
-        chmod +x "$ORDS_BIN" 2>/dev/null || true
-        
-        local PASS_FILE=$(mktemp)
-        printf "%s\n%s\n%s\n" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" > "$PASS_FILE"
+    cat > "$ORDS_CONFIG_DIR/databases/default/ords_params.properties" << 'PARAMSEOF'
+db.hostname=localhost
+db.port=1521
+db.servicename=XEPDB1
+db.username=SYS
+db.password=${ORACLE_PASSWORD}
+feature.sdw=true
+feature.rest.enabled.sql=true
+gateway.mode=proxied
+gateway.user=ORDS_PUBLIC_USER
+PARAMSEOF
+    
+    sed -i "s|\${ORACLE_PASSWORD}|$ORACLE_PASSWORD|g" "$ORDS_CONFIG_DIR/databases/default/ords_params.properties"
+fi
 
-        # CRITICAL: gateway-user must be ORDS_PUBLIC_USER, not APEX_PUBLIC_USER
-        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
-            --admin-user SYS \
-            --db-hostname localhost \
-            --db-port "$DB_PORT" \
-            --db-servicename "$DB_SERVICE" \
-            --feature-sdw true \
-            --gateway-mode proxied \
-            --gateway-user ORDS_PUBLIC_USER \
-            --password-stdin < "$PASS_FILE" >> "$INSTALL_LOG" 2>&1 || true
-
-        rm -f "$PASS_FILE"
-    fi
-    log "ORDS installed"
+log "✅ ORDS installed"
 
     # Step 18: Configure ORDS
     update_progress 75 "$(get_text step) 18/24: $(get_text configuring_ords)"
@@ -2479,7 +2658,70 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 </properties>
 SETTINGSEOF
     log "ORDS configured"
+# Step 18.5: Verify and Fix ORDS Configuration
+update_progress 76 "Verifying ORDS configuration..."
 
+if [ -n "$ORDS_BIN" ]; then
+    # Set all required configurations
+    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set \
+        standalone.http.port "$ORDS_PORT" 2>/dev/null || true
+    
+    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set \
+        standalone.context.path /ords 2>/dev/null || true
+    
+    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set \
+        standalone.static.context.path /i 2>/dev/null || true
+    
+    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set \
+        standalone.static.path "$IMAGES_DIR" 2>/dev/null || true
+    
+    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set \
+        standalone.doc.root "$IMAGES_DIR" 2>/dev/null || true
+    
+    # CRITICAL: Set database password in ORDS config
+    log "Setting ORDS database password..."
+    echo "$ORACLE_PASSWORD" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" \
+        config secret --password-stdin db.password 2>/dev/null || true
+    
+    # Verify password was set
+    if "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config list 2>&1 | grep -q "db.password"; then
+        log "✅ ORDS password configured"
+    else
+        log "⚠️ Warning: ORDS password may not be set"
+    fi
+fi
+
+# Create comprehensive settings.xml
+cat > "$ORDS_CONFIG_DIR/settings.xml" << 'SETTINGSEOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<!-- HTTP Server Configuration -->
+<entry key="standalone.http.port">8080</entry>
+<entry key="standalone.context.path">/ords</entry>
+
+<!-- Static Files Configuration -->
+<entry key="standalone.static.context.path">/i</entry>
+<entry key="standalone.static.path">/home/oracle-apex-complete/images</entry>
+<entry key="standalone.doc.root">/home/oracle-apex-complete/images</entry>
+
+<!-- Database Configuration -->
+<entry key="db.hostname">localhost</entry>
+<entry key="db.port">1521</entry>
+<entry key="db.servicename">XEPDB1</entry>
+
+<!-- Features -->
+<entry key="feature.sdw">true</entry>
+<entry key="feature.rest.enabled.sql">true</entry>
+
+<!-- Gateway Configuration -->
+<entry key="gateway.mode">proxied</entry>
+<entry key="gateway.user">ORDS_PUBLIC_USER</entry>
+</properties>
+SETTINGSEOF
+
+log "✅ ORDS configuration verified and updated"
+    
     # Step 19: Final user fixes
     update_progress 78 "$(get_text step) 19/24: Final database configuration..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
@@ -2497,23 +2739,79 @@ EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
     log "Final configuration done"
 
- # Step 20: Start ORDS
-    update_progress 82 "$(get_text step) 20/24: Starting ORDS..."
-    pkill -9 -f ords 2>/dev/null || true
-    sleep 5
-    run_sudo fuser -k "${ORDS_PORT}/tcp" 2>/dev/null || true
-    sleep 2
+# Step 20: Start ORDS with Enhanced Error Handling
+update_progress 82 "$(get_text step) 20/24: Starting ORDS..."
 
-    export ORDS_CONFIG="$ORDS_CONFIG_DIR"
-    export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-    
-    if [ -n "$ORDS_BIN" ]; then
-        nohup "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
-            --port "$ORDS_PORT" \
-            --apex-images "$IMAGES_DIR" \
-            > "$LOG_DIR/ords.log" 2>&1 &
-        log "ORDS started with PID $!"
-    fi
+log "Preparing to start ORDS..."
+
+# Kill any existing ORDS processes
+pkill -9 -f "ords.*serve" 2>/dev/null || true
+pkill -9 -f "java.*ords" 2>/dev/null || true
+sleep 5
+
+# Free the port
+run_sudo fuser -k "${ORDS_PORT}/tcp" 2>/dev/null || true
+sleep 2
+
+# Verify ORDS binary exists
+local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+if [ -z "$ORDS_BIN" ]; then
+    log "❌ ORDS binary not found!"
+    return 1
+fi
+
+# Start ORDS
+log "Starting ORDS from: $ORDS_BIN"
+log "Config directory: $ORDS_CONFIG_DIR"
+
+# Create ORDS startup script
+cat > "$PROJECT_DIR/start_ords.sh" << 'ORDSSTARTEOF'
+#!/bin/bash
+export ORDS_CONFIG="$ORDS_CONFIG_DIR"
+export _JAVA_OPTIONS="-Xms512m -Xmx1024m -Dfile.encoding=UTF-8"
+export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+
+cd "$PROJECT_DIR"
+
+# Log startup
+echo "[$(date)] Starting ORDS..." >> "$LOG_DIR/ords-startup.log"
+echo "ORDS_CONFIG: $ORDS_CONFIG" >> "$LOG_DIR/ords-startup.log"
+echo "JAVA_HOME: $JAVA_HOME" >> "$LOG_DIR/ords-startup.log"
+
+# Start ORDS
+"$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
+    --port 8080 \
+    --apex-images "$IMAGES_DIR" \
+    >> "$LOG_DIR/ords.log" 2>&1 &
+
+echo $! > "$PROJECT_DIR/ords.pid"
+echo "[$(date)] ORDS started with PID $!" >> "$LOG_DIR/ords-startup.log"
+
+wait
+ORDSSTARTEOF
+
+chmod +x "$PROJECT_DIR/start_ords.sh"
+
+# Start ORDS in background
+nohup bash "$PROJECT_DIR/start_ords.sh" > /dev/null 2>&1 &
+local ords_pid=$!
+
+log "ORDS started with PID: $ords_pid"
+echo "$ords_pid" > "$PROJECT_DIR/ords.pid"
+
+# Wait for ORDS to initialize
+log "Waiting for ORDS to initialize (this may take 2-3 minutes)..."
+sleep 120
+
+# Check if ORDS is running
+if kill -0 $ords_pid 2>/dev/null; then
+    log "✅ ORDS process is running"
+else
+    log "❌ ORDS process died!"
+    log "Last 50 lines of ORDS log:"
+    tail -50 "$LOG_DIR/ords.log" | tee -a "$INSTALL_LOG"
+    return 1
+fi
 
     # Step 21: Wait for ORDS
     update_progress 88 "$(get_text step) 21/24: Waiting for ORDS (2 minutes)..."
