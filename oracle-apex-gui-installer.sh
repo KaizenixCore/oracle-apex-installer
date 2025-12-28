@@ -15,16 +15,6 @@
 #  ║  Project    : KaizenixCore                                                ║
 #  ║  GitHub     : https://github.com/KaizenixCore/oracle-apex-installer/      ║
 #  ║  License    : MIT                                                         ║
-#  ╠═══════════════════════════════════════════════════════════════════════════╣
-#  ║  ✅ v4.3.0 FIXES (Based on CLI v3.0.0):                                   ║
-#  ║     - ERROR 571 Database Connection - COMPLETELY FIXED                    ║
-#  ║     - start_ords.sh heredoc fixed (variables now expand)                  ║
-#  ║     - settings.xml paths fixed (use variables, not hardcoded)             ║
-#  ║     - ORDS_METADATA schema installation added                             ║
-#  ║     - Pool configuration fix added                                        ║
-#  ║     - Password escaping for SQL fixed                                     ║
-#  ║     - All 31 steps from CLI integrated                                    ║
-#  ║     - Cross-Platform: Linux, macOS, Windows (WSL)                         ║
 #  ╚═══════════════════════════════════════════════════════════════════════════╝
 #
 ################################################################################
@@ -40,9 +30,6 @@ SCRIPTS_DIR="$PROJECT_DIR/scripts"
 ORDS_CONFIG_DIR="$PROJECT_DIR/ords_config"
 INSTALL_LOG="$PROJECT_DIR/install.log"
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# CRITICAL: Database Configuration - MUST BE CONSISTENT
-# ═══════════════════════════════════════════════════════════════════════════════
 DB_HOST="localhost"
 DB_PORT="1521"
 DB_SERVICE="XEPDB1"
@@ -65,65 +52,30 @@ OS_ID=""
 OS_VERSION=""
 ARCH=""
 
-#═══════════════════════════════════════════════════════════════════════════════
-# LANGUAGE STRINGS - ENGLISH
-#═══════════════════════════════════════════════════════════════════════════════
 declare -A LANG_EN=(
     ["title"]="Oracle APEX Installer"
     ["subtitle"]="KaizenixCore Edition v4.3"
-    ["welcome_title"]="🚀 Oracle APEX Ultimate Installer"
-    ["welcome_text"]="Oracle APEX Ultimate Installer v4.3.0
-
-This will install:
-• Oracle APEX (Latest Version)
-• Oracle ORDS (Latest Version)
-• Oracle XE 21c Database
-
-Features:
-✅ Automatic configuration
-✅ Error auto-fix (574/571/500)
-✅ APEX images auto-setup
-✅ Management GUI included
-✅ Real Clean Install option
-✅ DBeaver management
-✅ ORDS_METADATA schema fix
-✅ Pool configuration fix
-
-Created by: Peyman Rasouli
-Project: KaizenixCore
-
-Click Continue to start."
+    ["welcome_title"]="Oracle APEX Ultimate Installer"
+    ["welcome_text"]="Oracle APEX Ultimate Installer v4.3.0\n\nThis will install:\n- Oracle APEX (Latest Version)\n- Oracle ORDS (Latest Version)\n- Oracle XE 21c Database\n\nFeatures:\n- Automatic configuration\n- Error auto-fix (574/571/500)\n- APEX images auto-setup\n- Management GUI included\n\nCreated by: Peyman Rasouli\nProject: KaizenixCore\n\nClick Continue to start."
     ["select_action"]="Select Installation Type"
     ["action_text"]="What would you like to do?"
-    ["fresh_install"]="🆕 Fresh Install (New installation)"
-    ["repair_install"]="🔧 Repair (Fix existing installation)"
-    ["clean_install"]="🗑️ Clean Install (Remove ALL and reinstall)"
-    ["uninstall"]="❌ Uninstall Everything"
-    ["manage_dbeaver"]="📦 Manage DBeaver"
-    ["exit_installer"]="🚪 Exit"
-    ["enter_passwords"]="🔐 Enter Passwords"
+    ["fresh_install"]="Fresh Install (New installation)"
+    ["repair_install"]="Repair (Fix existing installation)"
+    ["clean_install"]="Clean Install (Remove ALL and reinstall)"
+    ["uninstall"]="Uninstall Everything"
+    ["manage_dbeaver"]="Manage DBeaver"
+    ["exit_installer"]="Exit"
+    ["enter_passwords"]="Enter Passwords"
     ["oracle_pass"]="Oracle Database Password:"
     ["apex_pass"]="APEX Admin Password:"
-    ["pass_rules"]="Password Rules:
-• Start with a letter (a-z, A-Z)
-• Only letters and numbers
-• Minimum 6 characters
-
-Example: MyPass123"
-    ["invalid_pass"]="Invalid Password!
-
-Password must:
-• Start with a letter
-• Contain only letters and numbers
-• Be at least 6 characters
-
-Example: Oracle123"
+    ["pass_rules"]="Password Rules:\n- Start with a letter (a-z, A-Z)\n- Only letters and numbers\n- Minimum 6 characters\n\nExample: MyPass123"
+    ["invalid_pass"]="Invalid Password!\n\nPassword must:\n- Start with a letter\n- Contain only letters and numbers\n- Be at least 6 characters"
     ["installing"]="Installing Oracle APEX..."
-    ["completed"]="✅ Installation Completed!"
+    ["completed"]="Installation Completed!"
     ["error"]="Error"
     ["warning"]="Warning"
     ["info"]="Information"
-    ["open_browser"]="🌐 Open APEX"
+    ["open_browser"]="Open APEX"
     ["exit"]="Exit"
     ["continue"]="Continue"
     ["cancel"]="Cancel"
@@ -135,65 +87,19 @@ Example: Oracle123"
     ["wait_ords"]="Waiting for ORDS to start..."
     ["step"]="Step"
     ["of"]="of"
-    ["confirm_clean"]="⚠️ WARNING: Clean Install
-
-This will PERMANENTLY DELETE:
-• All Oracle APEX data
-• All databases
-• All Docker volumes
-• All configurations
-
-Your new password will be used.
-
-Are you SURE you want to continue?"
-    ["confirm_uninstall"]="⚠️ WARNING: Complete Uninstall
-
-This will PERMANENTLY DELETE:
-• Oracle APEX
-• Oracle Database
-• All Docker containers and volumes
-• All project files
-
-This action CANNOT be undone!
-
-Are you SURE?"
+    ["confirm_clean"]="WARNING: Clean Install\n\nThis will PERMANENTLY DELETE:\n- All Oracle APEX data\n- All databases\n- All Docker volumes\n- All configurations\n\nAre you SURE you want to continue?"
+    ["confirm_uninstall"]="WARNING: Complete Uninstall\n\nThis will PERMANENTLY DELETE everything.\n\nAre you SURE?"
     ["dbeaver_menu"]="DBeaver Management"
     ["dbeaver_text"]="Select DBeaver action:"
-    ["dbeaver_install"]="📥 Install DBeaver"
-    ["dbeaver_remove"]="🗑️ Remove DBeaver Completely"
-    ["dbeaver_back"]="⬅️ Back"
+    ["dbeaver_install"]="Install DBeaver"
+    ["dbeaver_remove"]="Remove DBeaver Completely"
+    ["dbeaver_back"]="Back"
     ["removing_dbeaver"]="Removing DBeaver..."
     ["installing_dbeaver"]="Installing DBeaver..."
     ["dbeaver_removed"]="DBeaver has been completely removed!"
     ["dbeaver_installed"]="DBeaver has been installed!"
-    ["repair_text"]="Repair Mode
-
-This will:
-• Keep your existing data
-• Reset all passwords to your new password
-• Fix configuration issues
-• Restart all services
-
-Enter your NEW password below."
-    ["success_title"]="🎉 Installation Successful!"
-    ["success_text"]="Oracle APEX installed successfully!
-
-🌐 Admin Panel:
-http://localhost:8080/ords/apex_admin
-
-🔐 Login Page:
-http://localhost:8080/ords/f?p=4550
-
-📋 Login Credentials:
-   Workspace: INTERNAL
-   Username: ADMIN
-   Password: %PASSWORD%
-
-🛠️ Management:
-   GUI: bash ~/oracle-apex-complete/scripts/launch-gui.sh
-   Fix: bash ~/oracle-apex-complete/scripts/fix.sh
-
-If you see errors, run the Fix script."
+    ["success_title"]="Installation Successful!"
+    ["success_text"]="Oracle APEX installed successfully!\n\nAdmin Panel:\nhttp://localhost:8080/ords/apex_admin\n\nLogin Page:\nhttp://localhost:8080/ords/f?p=4550\n\nCredentials:\n   Workspace: INTERNAL\n   Username: ADMIN\n   Password: %PASSWORD%"
     ["create_service_title"]="Create Auto-Start Service?"
     ["create_service_text"]="Would you like Oracle APEX to start automatically on boot?"
     ["service_created"]="Auto-start service created!"
@@ -213,174 +119,61 @@ If you see errors, run the Fix script."
     ["install_dbeaver_title"]="Install DBeaver?"
 )
 
-#═══════════════════════════════════════════════════════════════════════════════
-# LANGUAGE STRINGS - PERSIAN
-#═══════════════════════════════════════════════════════════════════════════════
 declare -A LANG_FA=(
     ["title"]="نصب‌کننده اوراکل اپکس"
-    ["subtitle"]="نسخه KaizenixCore v4.3"
-    ["welcome_title"]="🚀 نصب‌کننده اوراکل اپکس"
-    ["welcome_text"]="نصب‌کننده اوراکل اپکس نسخه 4.3.0
-
-این برنامه نصب می‌کند:
-• Oracle APEX (آخرین نسخه)
-• Oracle ORDS (آخرین نسخه)
-• Oracle XE 21c Database
-
-ویژگی‌ها:
-✅ پیکربندی خودکار
-✅ رفع خودکار خطاها (574/571/500)
-✅ تنظیم خودکار تصاویر
-✅ رابط گرافیکی مدیریت
-✅ نصب تمیز واقعی
-✅ مدیریت DBeaver
-✅ رفع مشکل ORDS_METADATA
-✅ رفع تنظیمات Pool
-
-سازنده: پیمان رسولی
-پروژه: KaizenixCore
-
-برای شروع ادامه را بزنید."
+    ["welcome_title"]="نصب‌کننده اوراکل اپکس"
+    ["welcome_text"]="نصب‌کننده اوراکل اپکس نسخه 4.3.0"
     ["select_action"]="انتخاب نوع نصب"
     ["action_text"]="چه کاری می‌خواهید انجام دهید؟"
-    ["fresh_install"]="🆕 نصب جدید"
-    ["repair_install"]="🔧 تعمیر (رفع مشکلات نصب فعلی)"
-    ["clean_install"]="🗑️ نصب تمیز (حذف همه و نصب مجدد)"
-    ["uninstall"]="❌ حذف کامل"
-    ["manage_dbeaver"]="📦 مدیریت DBeaver"
-    ["exit_installer"]="🚪 خروج"
-    ["enter_passwords"]="🔐 ورود رمز عبور"
-    ["oracle_pass"]="رمز عبور Oracle Database:"
-    ["apex_pass"]="رمز عبور APEX Admin:"
-    ["pass_rules"]="قوانین رمز عبور:
-• با حرف انگلیسی شروع شود
-• فقط حروف و اعداد
-• حداقل ۶ کاراکتر
-
-مثال: MyPass123"
+    ["fresh_install"]="نصب جدید"
+    ["repair_install"]="تعمیر"
+    ["clean_install"]="نصب تمیز"
+    ["uninstall"]="حذف کامل"
+    ["manage_dbeaver"]="مدیریت DBeaver"
+    ["exit_installer"]="خروج"
+    ["enter_passwords"]="ورود رمز عبور"
+    ["oracle_pass"]="رمز عبور Oracle:"
+    ["apex_pass"]="رمز عبور APEX:"
+    ["pass_rules"]="قوانین رمز عبور:\n- با حرف شروع شود\n- فقط حروف و اعداد\n- حداقل 6 کاراکتر"
     ["invalid_pass"]="رمز عبور نامعتبر!"
-    ["installing"]="در حال نصب اوراکل اپکس..."
-    ["completed"]="✅ نصب با موفقیت انجام شد!"
+    ["installing"]="در حال نصب..."
+    ["completed"]="نصب کامل شد!"
     ["error"]="خطا"
     ["warning"]="هشدار"
     ["info"]="اطلاعات"
-    ["open_browser"]="🌐 باز کردن APEX"
     ["exit"]="خروج"
     ["continue"]="ادامه"
     ["cancel"]="انصراف"
     ["yes"]="بله"
     ["no"]="خیر"
     ["ok"]="تایید"
-    ["sudo_pass"]="رمز عبور سیستم را وارد کنید:"
-    ["wait_db"]="منتظر شروع دیتابیس..."
-    ["wait_ords"]="منتظر شروع ORDS..."
+    ["sudo_pass"]="رمز عبور سیستم:"
     ["step"]="مرحله"
-    ["of"]="از"
-    ["confirm_clean"]="⚠️ هشدار: نصب تمیز
-
-این کار برای همیشه حذف می‌کند:
-• تمام داده‌های Oracle APEX
-• تمام دیتابیس‌ها
-• تمام Docker volumes
-• تمام تنظیمات
-
-آیا مطمئن هستید؟"
-    ["confirm_uninstall"]="⚠️ هشدار: حذف کامل
-
-آیا مطمئن هستید؟"
-    ["dbeaver_menu"]="مدیریت DBeaver"
-    ["dbeaver_text"]="عملیات DBeaver را انتخاب کنید:"
-    ["dbeaver_install"]="📥 نصب DBeaver"
-    ["dbeaver_remove"]="🗑️ حذف کامل DBeaver"
-    ["dbeaver_back"]="⬅️ بازگشت"
-    ["removing_dbeaver"]="در حال حذف DBeaver..."
-    ["installing_dbeaver"]="در حال نصب DBeaver..."
-    ["dbeaver_removed"]="DBeaver کاملاً حذف شد!"
-    ["dbeaver_installed"]="DBeaver نصب شد!"
-    ["success_title"]="🎉 نصب موفق!"
-    ["success_text"]="اوراکل اپکس با موفقیت نصب شد!
-
-🌐 پنل مدیریت:
-http://localhost:8080/ords/apex_admin
-
-🔐 صفحه ورود:
-http://localhost:8080/ords/f?p=4550
-
-📋 اطلاعات ورود:
-   Workspace: INTERNAL
-   Username: ADMIN
-   Password: %PASSWORD%"
-    ["create_service_title"]="ایجاد سرویس خودکار؟"
-    ["create_service_text"]="آیا می‌خواهید Oracle APEX خودکار اجرا شود؟"
-    ["service_created"]="سرویس خودکار ایجاد شد!"
-    ["detecting_os"]="تشخیص سیستم عامل..."
-    ["installing_deps"]="نصب وابستگی‌ها..."
-    ["downloading"]="دانلود"
-    ["extracting"]="استخراج فایل‌ها..."
-    ["configuring"]="پیکربندی..."
-    ["starting_db"]="شروع دیتابیس (۵-۱۰ دقیقه)..."
-    ["installing_apex"]="نصب APEX (۱۵-۲۵ دقیقه)..."
-    ["configuring_ords"]="پیکربندی ORDS..."
-    ["fixing_images"]="تنظیم تصاویر APEX..."
-    ["creating_scripts"]="ایجاد اسکریپت‌های مدیریتی..."
-    ["verifying"]="بررسی نصب..."
-    ["cleaning"]="پاکسازی نصب قدیمی..."
-    ["resetting_password"]="تنظیم مجدد رمزها..."
-    ["install_dbeaver_title"]="نصب DBeaver؟"
+    ["success_title"]="نصب موفق!"
+    ["success_text"]="اوراکل اپکس نصب شد!"
 )
 
-#═══════════════════════════════════════════════════════════════════════════════
-# LANGUAGE STRINGS - GERMAN
-#═══════════════════════════════════════════════════════════════════════════════
 declare -A LANG_DE=(
     ["title"]="Oracle APEX Installer"
-    ["subtitle"]="KaizenixCore Edition v4.3"
-    ["welcome_title"]="🚀 Oracle APEX Ultimate Installer"
-    ["welcome_text"]="Oracle APEX Ultimate Installer v4.3.0
-
-Dies wird installieren:
-• Oracle APEX (Neueste Version)
-• Oracle ORDS (Neueste Version)
-• Oracle XE 21c Datenbank
-
-Klicken Sie Weiter um zu starten."
-    ["select_action"]="Installationstyp wählen"
-    ["action_text"]="Was möchten Sie tun?"
-    ["fresh_install"]="🆕 Neuinstallation"
-    ["repair_install"]="🔧 Reparieren"
-    ["clean_install"]="🗑️ Saubere Installation"
-    ["uninstall"]="❌ Alles deinstallieren"
-    ["manage_dbeaver"]="📦 DBeaver verwalten"
-    ["exit_installer"]="🚪 Beenden"
-    ["enter_passwords"]="🔐 Passwörter eingeben"
-    ["oracle_pass"]="Oracle Database Passwort:"
-    ["apex_pass"]="APEX Admin Passwort:"
-    ["pass_rules"]="Passwortregeln:
-• Beginnt mit Buchstaben
-• Nur Buchstaben und Zahlen
-• Mindestens 6 Zeichen"
-    ["invalid_pass"]="Ungültiges Passwort!"
-    ["installing"]="Oracle APEX wird installiert..."
-    ["completed"]="✅ Installation abgeschlossen!"
+    ["welcome_title"]="Oracle APEX Installer"
+    ["select_action"]="Installationstyp"
+    ["fresh_install"]="Neuinstallation"
+    ["repair_install"]="Reparieren"
+    ["clean_install"]="Saubere Installation"
+    ["uninstall"]="Deinstallieren"
+    ["exit_installer"]="Beenden"
     ["error"]="Fehler"
     ["warning"]="Warnung"
     ["info"]="Information"
-    ["exit"]="Beenden"
     ["continue"]="Weiter"
     ["cancel"]="Abbrechen"
     ["yes"]="Ja"
     ["no"]="Nein"
     ["ok"]="OK"
-    ["sudo_pass"]="Geben Sie Ihr Systempasswort ein:"
     ["step"]="Schritt"
-    ["of"]="von"
-    ["success_title"]="🎉 Installation erfolgreich!"
-    ["success_text"]="Oracle APEX erfolgreich installiert!"
+    ["success_title"]="Installation erfolgreich!"
 )
 
-#═══════════════════════════════════════════════════════════════════════════════
-# GET TEXT FUNCTION
-#═══════════════════════════════════════════════════════════════════════════════
 get_text() {
     local key="$1"
     case $CURRENT_LANG in
@@ -390,9 +183,6 @@ get_text() {
     esac
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# UTILITY FUNCTIONS
-#═══════════════════════════════════════════════════════════════════════════════
 safe_mkdir() {
     mkdir -p "$1" 2>/dev/null || sudo mkdir -p "$1" 2>/dev/null || true
     chmod 755 "$1" 2>/dev/null || sudo chmod 755 "$1" 2>/dev/null || true
@@ -411,33 +201,8 @@ log() {
     echo "$msg"
 }
 
-log_info() {
-    log "ℹ️  $*"
-}
-
-log_success() {
-    log "✅ $*"
-}
-
-log_warning() {
-    log "⚠️  $*"
-}
-
-log_error() {
-    log "❌ $*"
-}
-
-log_step() {
-    echo ""
-    echo "═══════════════════════════════════════════════════════════════════"
-    echo "  $*"
-    echo "═══════════════════════════════════════════════════════════════════"
-    log "STEP: $*"
-}
-
 detect_os() {
-    log_info "Detecting operating system..."
-    
+    log "Detecting operating system..."
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         if grep -q Microsoft /proc/version 2>/dev/null; then
             OS_TYPE="wsl"
@@ -446,12 +211,9 @@ detect_os() {
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         OS_TYPE="macos"
-    elif [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
-        OS_TYPE="windows"
     else
         OS_TYPE="linux"
     fi
-    
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS_ID="$ID"
@@ -460,26 +222,19 @@ detect_os() {
         OS_ID="unknown"
         OS_VERSION="unknown"
     fi
-    
     ARCH=$(uname -m)
-    
-    log_success "Detected: $OS_TYPE ($OS_ID $OS_VERSION) - $ARCH"
+    log "Detected: $OS_TYPE ($OS_ID $OS_VERSION) - $ARCH"
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# GUI FUNCTIONS
-#═══════════════════════════════════════════════════════════════════════════════
 install_gui_tool() {
     if command -v yad &> /dev/null; then
         GUI_TOOL="yad"
         return 0
     fi
-    
     if command -v zenity &> /dev/null; then
         GUI_TOOL="zenity"
         return 0
     fi
-
     echo "Installing GUI tool..."
     case "$OS_ID" in
         ubuntu|debian|linuxmint|pop)
@@ -496,17 +251,14 @@ install_gui_tool() {
             sudo pacman -S --noconfirm yad 2>/dev/null || sudo pacman -S --noconfirm zenity 2>/dev/null || true
             ;;
     esac
-
     if command -v yad &> /dev/null; then
         GUI_TOOL="yad"
     elif command -v zenity &> /dev/null; then
         GUI_TOOL="zenity"
     else
-        echo "ERROR: No GUI tool found. Please install yad or zenity"
+        echo "ERROR: No GUI tool found"
         exit 1
     fi
-    
-    log "Using GUI tool: $GUI_TOOL"
 }
 
 gui_info() {
@@ -514,65 +266,41 @@ gui_info() {
     local text="$2"
     local width="${3:-550}"
     local height="${4:-400}"
-    
     if [ "$GUI_TOOL" = "yad" ]; then
-        yad --info --title="$title" --text="$text" \
-            --width=$width --height=$height --center \
-            --button="$(get_text ok):0" \
-            --borders=15 --text-align=left 2>/dev/null
+        yad --info --title="$title" --text="$text" --width=$width --height=$height --center --button="$(get_text ok):0" --borders=15 2>/dev/null
     else
-        zenity --info --title="$title" --text="$text" \
-            --width=$width --height=$height \
-            --ok-label="$(get_text ok)" 2>/dev/null
+        zenity --info --title="$title" --text="$text" --width=$width --height=$height --ok-label="$(get_text ok)" 2>/dev/null
     fi
 }
 
 gui_error() {
     local title="$1"
     local text="$2"
-    
     if [ "$GUI_TOOL" = "yad" ]; then
-        yad --error --title="$title" --text="$text" \
-            --width=500 --height=300 --center \
-            --button="$(get_text ok):0" --borders=15 2>/dev/null
+        yad --error --title="$title" --text="$text" --width=500 --height=300 --center --button="$(get_text ok):0" --borders=15 2>/dev/null
     else
-        zenity --error --title="$title" --text="$text" \
-            --width=500 --height=300 \
-            --ok-label="$(get_text ok)" 2>/dev/null
+        zenity --error --title="$title" --text="$text" --width=500 --height=300 --ok-label="$(get_text ok)" 2>/dev/null
     fi
 }
 
 gui_warning() {
     local title="$1"
     local text="$2"
-    
     if [ "$GUI_TOOL" = "yad" ]; then
-        yad --warning --title="$title" --text="$text" \
-            --width=500 --height=350 --center \
-            --button="$(get_text ok):0" --borders=15 2>/dev/null
+        yad --warning --title="$title" --text="$text" --width=500 --height=350 --center --button="$(get_text ok):0" --borders=15 2>/dev/null
     else
-        zenity --warning --title="$title" --text="$text" \
-            --width=500 --height=350 \
-            --ok-label="$(get_text ok)" 2>/dev/null
+        zenity --warning --title="$title" --text="$text" --width=500 --height=350 --ok-label="$(get_text ok)" 2>/dev/null
     fi
 }
 
 gui_question() {
     local title="$1"
     local text="$2"
-    local yes_label="${3:-$(get_text yes)}"
-    local no_label="${4:-$(get_text no)}"
-    
     if [ "$GUI_TOOL" = "yad" ]; then
-        yad --question --title="$title" --text="$text" \
-            --width=550 --height=400 --center \
-            --button="$no_label:1" --button="$yes_label:0" \
-            --borders=15 2>/dev/null
+        yad --question --title="$title" --text="$text" --width=550 --height=400 --center --button="$(get_text no):1" --button="$(get_text yes):0" --borders=15 2>/dev/null
         return $?
     else
-        zenity --question --title="$title" --text="$text" \
-            --width=550 --height=400 \
-            --ok-label="$yes_label" --cancel-label="$no_label" 2>/dev/null
+        zenity --question --title="$title" --text="$text" --width=550 --height=400 --ok-label="$(get_text yes)" --cancel-label="$(get_text no)" 2>/dev/null
         return $?
     fi
 }
@@ -582,28 +310,19 @@ gui_entry() {
     local text="$2"
     local hide="${3:-false}"
     local result=""
-    
     if [ "$GUI_TOOL" = "yad" ]; then
         if [ "$hide" = "true" ]; then
-            result=$(yad --entry --title="$title" --text="$text" \
-                --hide-text --width=450 --center \
-                --button="$(get_text cancel):1" --button="$(get_text ok):0" \
-                --borders=15 2>/dev/null)
+            result=$(yad --entry --title="$title" --text="$text" --hide-text --width=450 --center --button="$(get_text cancel):1" --button="$(get_text ok):0" --borders=15 2>/dev/null)
         else
-            result=$(yad --entry --title="$title" --text="$text" \
-                --width=450 --center \
-                --button="$(get_text cancel):1" --button="$(get_text ok):0" \
-                --borders=15 2>/dev/null)
+            result=$(yad --entry --title="$title" --text="$text" --width=450 --center --button="$(get_text cancel):1" --button="$(get_text ok):0" --borders=15 2>/dev/null)
         fi
     else
         if [ "$hide" = "true" ]; then
             result=$(zenity --password --title="$title" 2>/dev/null)
         else
-            result=$(zenity --entry --title="$title" --text="$text" \
-                --width=450 2>/dev/null)
+            result=$(zenity --entry --title="$title" --text="$text" --width=450 2>/dev/null)
         fi
     fi
-    
     echo "$result"
 }
 
@@ -612,68 +331,37 @@ gui_list() {
     local text="$2"
     shift 2
     local result=""
-    
     if [ "$GUI_TOOL" = "yad" ]; then
-        result=$(yad --list --title="$title" --text="$text" \
-            --radiolist --column="" --column="ID" --column="Option" \
-            "$@" \
-            --width=550 --height=450 --center \
-            --button="$(get_text cancel):1" --button="$(get_text ok):0" \
-            --print-column=2 --hide-column=2 \
-            --borders=15 2>/dev/null)
+        result=$(yad --list --title="$title" --text="$text" --radiolist --column="" --column="ID" --column="Option" "$@" --width=550 --height=450 --center --button="$(get_text cancel):1" --button="$(get_text ok):0" --print-column=2 --hide-column=2 --borders=15 2>/dev/null)
     else
-        result=$(zenity --list --title="$title" --text="$text" \
-            --radiolist --column="" --column="ID" --column="Option" \
-            "$@" \
-            --width=550 --height=450 \
-            --ok-label="$(get_text ok)" --cancel-label="$(get_text cancel)" \
-            --hide-column=2 2>/dev/null)
+        result=$(zenity --list --title="$title" --text="$text" --radiolist --column="" --column="ID" --column="Option" "$@" --width=550 --height=450 --ok-label="$(get_text ok)" --cancel-label="$(get_text cancel)" --hide-column=2 2>/dev/null)
     fi
-    
     echo "$result" | tr -d '|' | tr -d ' '
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# LANGUAGE SELECTION
-#═══════════════════════════════════════════════════════════════════════════════
 select_language() {
     local result=""
-    
-    result=$(gui_list "🌐 Select Language / انتخاب زبان / Sprache" \
-        "Select your preferred language:" \
-        TRUE "en" "🇺🇸 English" \
-        FALSE "fa" "🇮🇷 فارسی (Persian)" \
-        FALSE "de" "🇩🇪 Deutsch (German)")
-    
+    result=$(gui_list "Select Language" "Select your preferred language:" TRUE "en" "English" FALSE "fa" "Persian" FALSE "de" "German")
     [ -z "$result" ] && exit 0
     CURRENT_LANG="$result"
     [ -z "$CURRENT_LANG" ] && CURRENT_LANG="en"
-    
-    log "Language selected: $CURRENT_LANG"
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# SUDO PASSWORD
-#═══════════════════════════════════════════════════════════════════════════════
 get_sudo_password() {
     if sudo -n true 2>/dev/null; then
         return 0
     fi
-
     local pass=""
     local attempts=0
-    
     while [ $attempts -lt 3 ]; do
         pass=$(gui_entry "$(get_text title)" "$(get_text sudo_pass)" "true")
-        
         [ -z "$pass" ] && exit 0
-
         if echo "$pass" | sudo -S true 2>/dev/null; then
             SUDO_PASS="$pass"
             return 0
         else
             attempts=$((attempts + 1))
-            gui_error "$(get_text error)" "Wrong password! Try again. ($attempts/3)"
+            gui_error "$(get_text error)" "Wrong password! ($attempts/3)"
         fi
     done
     exit 1
@@ -687,70 +375,40 @@ run_sudo() {
     fi
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# PASSWORD INPUT
-#═══════════════════════════════════════════════════════════════════════════════
 get_passwords() {
     local result=""
-    
     while true; do
         if [ "$GUI_TOOL" = "yad" ]; then
-            result=$(yad --form --title="$(get_text title) - $(get_text enter_passwords)" \
-                --text="$(get_text pass_rules)" \
-                --field="$(get_text oracle_pass):H" "" \
-                --field="$(get_text apex_pass):H" "" \
-                --width=550 --height=400 --center \
-                --button="$(get_text cancel):1" --button="$(get_text continue):0" \
-                --borders=15 2>/dev/null)
+            result=$(yad --form --title="$(get_text title) - $(get_text enter_passwords)" --text="$(get_text pass_rules)" --field="$(get_text oracle_pass):H" "" --field="$(get_text apex_pass):H" "" --width=550 --height=400 --center --button="$(get_text cancel):1" --button="$(get_text continue):0" --borders=15 2>/dev/null)
         else
-            result=$(zenity --forms --title="$(get_text title)" \
-                --text="$(get_text pass_rules)" \
-                --add-password="$(get_text oracle_pass)" \
-                --add-password="$(get_text apex_pass)" \
-                --width=500 --height=350 \
-                --ok-label="$(get_text continue)" --cancel-label="$(get_text cancel)" 2>/dev/null)
+            result=$(zenity --forms --title="$(get_text title)" --text="$(get_text pass_rules)" --add-password="$(get_text oracle_pass)" --add-password="$(get_text apex_pass)" --width=500 --height=350 2>/dev/null)
         fi
-        
         [ -z "$result" ] && exit 0
-
         ORACLE_PASSWORD=$(echo "$result" | cut -d'|' -f1)
         APEX_ADMIN_PASSWORD=$(echo "$result" | cut -d'|' -f2)
-
-        if [[ "$ORACLE_PASSWORD" =~ ^[a-zA-Z][a-zA-Z0-9]{5,}$ ]] && \
-           [[ "$APEX_ADMIN_PASSWORD" =~ ^[a-zA-Z][a-zA-Z0-9]{5,}$ ]]; then
+        if [[ "$ORACLE_PASSWORD" =~ ^[a-zA-Z][a-zA-Z0-9]{5,}$ ]] && [[ "$APEX_ADMIN_PASSWORD" =~ ^[a-zA-Z][a-zA-Z0-9]{5,}$ ]]; then
             break
         else
             gui_error "$(get_text error)" "$(get_text invalid_pass)"
         fi
     done
-    
     export ORACLE_PASSWORD
     export APEX_ADMIN_PASSWORD
-    log "Passwords validated"
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# PROGRESS BAR
-#═══════════════════════════════════════════════════════════════════════════════
 FIFO_FILE=""
 PROGRESS_PID=""
 
 start_progress() {
     FIFO_FILE=$(mktemp -u)
     mkfifo "$FIFO_FILE" 2>/dev/null || true
-    
     if [ "$GUI_TOOL" = "yad" ]; then
-        yad --progress --title="$(get_text title)" --text="$(get_text installing)" \
-            --percentage=0 --auto-close --no-buttons \
-            --width=600 --height=150 --center --borders=15 < "$FIFO_FILE" 2>/dev/null &
+        yad --progress --title="$(get_text title)" --text="$(get_text installing)" --percentage=0 --auto-close --no-buttons --width=600 --height=150 --center --borders=15 < "$FIFO_FILE" 2>/dev/null &
         PROGRESS_PID=$!
     else
-        zenity --progress --title="$(get_text title)" --text="$(get_text installing)" \
-            --percentage=0 --auto-close --no-cancel \
-            --width=600 --height=150 < "$FIFO_FILE" 2>/dev/null &
+        zenity --progress --title="$(get_text title)" --text="$(get_text installing)" --percentage=0 --auto-close --no-cancel --width=600 --height=150 < "$FIFO_FILE" 2>/dev/null &
         PROGRESS_PID=$!
     fi
-    
     exec 3>"$FIFO_FILE" 2>/dev/null || true
 }
 
@@ -771,142 +429,119 @@ stop_progress() {
     [ -n "$PROGRESS_PID" ] && kill "$PROGRESS_PID" 2>/dev/null || true
     sleep 1
 }
-
-#═══════════════════════════════════════════════════════════════════════════════
-# COMPLETE CLEANUP FUNCTION
-#═══════════════════════════════════════════════════════════════════════════════
-complete_cleanup() {
-    log "Starting complete cleanup..."
-    
-    pkill -9 -f ords 2>/dev/null || true
-    pkill -9 -f java.*ords 2>/dev/null || true
-    sleep 3
-    
-    docker stop "$CONTAINER_NAME" 2>/dev/null || true
-    docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
-    
-    docker volume rm oracle-apex-complete_oracle-data 2>/dev/null || true
-    docker volume rm oracle-apex-data 2>/dev/null || true
-    docker volume rm oracle-data 2>/dev/null || true
-    docker volume rm apex-data 2>/dev/null || true
-    
-    local volumes=$(docker volume ls -q 2>/dev/null | grep -iE "oracle|apex" || true)
-    if [ -n "$volumes" ]; then
-        echo "$volumes" | xargs -r docker volume rm 2>/dev/null || true
-    fi
-    
-    rm -rf "$PROJECT_DIR" 2>/dev/null || true
-    docker network rm apex-network 2>/dev/null || true
-    docker system prune -f 2>/dev/null || true
-    
-    log "Complete cleanup finished"
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# COMPLETE UNINSTALL
-#═══════════════════════════════════════════════════════════════════════════════
-complete_uninstall() {
-    log "Starting complete uninstall..."
-    
-    complete_cleanup
-    
-    run_sudo systemctl stop oracle-apex.service 2>/dev/null || true
-    run_sudo systemctl stop oracle-apex-db.service 2>/dev/null || true
-    run_sudo systemctl stop oracle-apex-ords.service 2>/dev/null || true
-    run_sudo systemctl disable oracle-apex.service 2>/dev/null || true
-    run_sudo systemctl disable oracle-apex-db.service 2>/dev/null || true
-    run_sudo systemctl disable oracle-apex-ords.service 2>/dev/null || true
-    run_sudo rm -f /etc/systemd/system/oracle-apex*.service 2>/dev/null || true
-    run_sudo systemctl daemon-reload 2>/dev/null || true
-    
-    rm -f "$HOME/.local/share/applications/oracle-apex.desktop" 2>/dev/null || true
-    rm -f "$HOME/.local/share/icons/oracle-apex-icon.svg" 2>/dev/null || true
-    
-    log "Complete uninstall finished"
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# DBEAVER MANAGEMENT
-#═══════════════════════════════════════════════════════════════════════════════
-remove_dbeaver() {
-    log "Removing DBeaver completely..."
-    
+install_dependencies() {
+    log "Installing dependencies..."
     case "$OS_ID" in
         ubuntu|debian|linuxmint|pop)
-            run_sudo apt-get remove -y --purge dbeaver-ce dbeaver 2>/dev/null || true
-            run_sudo apt-get autoremove -y 2>/dev/null || true
+            run_sudo apt-get update -qq
+            run_sudo apt-get install -y curl wget unzip docker.io docker-compose jq
+            run_sudo systemctl enable docker
+            run_sudo systemctl start docker
             ;;
         fedora)
-            run_sudo dnf remove -y dbeaver-ce dbeaver 2>/dev/null || true
+            run_sudo dnf install -y curl wget unzip docker docker-compose jq
+            run_sudo systemctl enable docker
+            run_sudo systemctl start docker
             ;;
         opensuse*|suse*)
-            run_sudo zypper remove -y dbeaver-ce dbeaver 2>/dev/null || true
+            run_sudo zypper --non-interactive install -y curl wget unzip docker docker-compose jq
+            run_sudo systemctl enable docker
+            run_sudo systemctl start docker
             ;;
         arch|manjaro)
-            run_sudo pacman -Rns --noconfirm dbeaver dbeaver-ce 2>/dev/null || true
+            run_sudo pacman -S --noconfirm curl wget unzip docker docker-compose jq
+            run_sudo systemctl enable docker
+            run_sudo systemctl start docker
             ;;
     esac
-    
-    flatpak uninstall -y io.dbeaver.DBeaverCommunity 2>/dev/null || true
-    run_sudo snap remove dbeaver-ce 2>/dev/null || true
-    
-    rm -rf "$HOME/.dbeaver4" 2>/dev/null || true
-    rm -rf "$HOME/.dbeaver-drivers" 2>/dev/null || true
-    rm -rf "$HOME/.local/share/DBeaverData" 2>/dev/null || true
-    rm -rf "$HOME/.config/DBeaverData" 2>/dev/null || true
-    rm -rf "$HOME/.config/dbeaver" 2>/dev/null || true
-    rm -f "$HOME/.local/share/applications/dbeaver*.desktop" 2>/dev/null || true
-    
-    log "DBeaver removed completely"
+    run_sudo usermod -aG docker "$USER" 2>/dev/null || true
+}
+
+check_previous_installation() {
+    if [ -d "$PROJECT_DIR" ] && [ -f "$PROJECT_DIR/.db_password" ]; then
+        return 0
+    fi
+    if docker ps -a 2>/dev/null | grep -q "$CONTAINER_NAME"; then
+        return 0
+    fi
+    return 1
+}
+
+complete_cleanup() {
+    log "Performing complete cleanup..."
+    pkill -9 -f ords 2>/dev/null || true
+    pkill -9 -f java.*ords 2>/dev/null || true
+    docker stop "$CONTAINER_NAME" 2>/dev/null || true
+    docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
+    docker volume rm oracle-apex-data 2>/dev/null || true
+    rm -rf "$PROJECT_DIR" 2>/dev/null || true
+    run_sudo rm -f /etc/systemd/system/oracle-apex.service 2>/dev/null || true
+    run_sudo systemctl daemon-reload 2>/dev/null || true
+    rm -f "$HOME/.local/share/applications/oracle-apex.desktop" 2>/dev/null || true
+    log "Cleanup completed"
+}
+
+complete_uninstall() {
+    complete_cleanup
+    docker rmi "$ORACLE_IMAGE" 2>/dev/null || true
+    log "Uninstall completed"
+}
+
+wait_for_database_ready() {
+    log "Waiting for database to be ready..."
+    local max_wait=600
+    local waited=0
+    while [ $waited -lt $max_wait ]; do
+        if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "DATABASE IS READY"; then
+            log "Database is ready!"
+            return 0
+        fi
+        sleep 10
+        waited=$((waited + 10))
+    done
+    log "Warning: Database wait timeout"
+    return 1
+}
+
+fix_apex_images() {
+    log "Fixing APEX images..."
+    rm -rf "$IMAGES_DIR" 2>/dev/null || true
+    if [ -d "$PROJECT_DIR/apex/images" ]; then
+        cp -r "$PROJECT_DIR/apex/images" "$IMAGES_DIR"
+        chmod -R 755 "$IMAGES_DIR"
+    fi
+    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+    if [ -n "$ORDS_BIN" ]; then
+        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.path "$IMAGES_DIR" 2>/dev/null || true
+        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i 2>/dev/null || true
+        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.doc.root "$IMAGES_DIR" 2>/dev/null || true
+    fi
 }
 
 install_dbeaver() {
     log "Installing DBeaver..."
-    
-    if command -v dbeaver &> /dev/null || command -v dbeaver-ce &> /dev/null; then
-        log "DBeaver already installed"
-        return 0
-    fi
-    
     case "$OS_ID" in
-        ubuntu|debian|linuxmint|pop|neon)
-            run_sudo sh -c 'echo "deb https://dbeaver.io/debs/dbeaver-ce /" > /etc/apt/sources.list.d/dbeaver.list' 2>/dev/null || true
-            wget -O - https://dbeaver.io/debs/dbeaver.gpg.key 2>/dev/null | run_sudo apt-key add - 2>/dev/null || true
-            run_sudo apt-get update -qq 2>/dev/null || true
-            
-            if ! run_sudo apt-get install -y dbeaver-ce 2>/dev/null; then
-                local dbeaver_deb="/tmp/dbeaver-ce.deb"
-                wget -q -O "$dbeaver_deb" "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" 2>/dev/null || \
-                curl -L -o "$dbeaver_deb" "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" 2>/dev/null || true
-                
-                if [ -f "$dbeaver_deb" ]; then
-                    run_sudo dpkg -i "$dbeaver_deb" 2>/dev/null || true
-                    run_sudo apt-get install -f -y 2>/dev/null || true
-                    rm -f "$dbeaver_deb"
-                fi
+        ubuntu|debian|linuxmint|pop)
+            if ! command -v dbeaver-ce &> /dev/null; then
+                wget -q -O /tmp/dbeaver.deb "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" 2>/dev/null
+                run_sudo dpkg -i /tmp/dbeaver.deb 2>/dev/null || run_sudo apt-get install -f -y 2>/dev/null
+                rm -f /tmp/dbeaver.deb
             fi
             ;;
         fedora)
-            run_sudo dnf install -y https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm 2>/dev/null || true
-            ;;
-        rhel|centos|rocky|alma)
-            local rpm_file="/tmp/dbeaver-ce.rpm"
-            wget -q -O "$rpm_file" "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null || true
-            if [ -f "$rpm_file" ]; then
-                run_sudo yum install -y "$rpm_file" 2>/dev/null || true
-                rm -f "$rpm_file"
+            if ! command -v dbeaver-ce &> /dev/null; then
+                run_sudo dnf install -y https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm 2>/dev/null || true
             fi
             ;;
         opensuse*|suse*)
-            local rpm_file="/tmp/dbeaver-ce.rpm"
-            wget -q -O "$rpm_file" "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null || true
-            if [ -f "$rpm_file" ]; then
-                run_sudo zypper --non-interactive install -y "$rpm_file" 2>/dev/null || true
-                rm -f "$rpm_file"
+            if ! command -v dbeaver-ce &> /dev/null; then
+                run_sudo zypper --non-interactive install -y https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm 2>/dev/null || true
             fi
             ;;
         arch|manjaro)
-            run_sudo pacman -S --noconfirm dbeaver 2>/dev/null || true
+            if ! command -v dbeaver-ce &> /dev/null; then
+                run_sudo pacman -S --noconfirm dbeaver 2>/dev/null || true
+            fi
             ;;
         *)
             if command -v flatpak &> /dev/null; then
@@ -916,18 +551,34 @@ install_dbeaver() {
             fi
             ;;
     esac
-    
-    sleep 2
-    
-    if command -v dbeaver &> /dev/null || command -v dbeaver-ce &> /dev/null || \
-       [ -f /usr/share/applications/dbeaver-ce.desktop ] || \
-       flatpak list --app 2>/dev/null | grep -q "dbeaver"; then
-        log_success "DBeaver installed successfully"
+    if command -v dbeaver-ce &> /dev/null || command -v dbeaver &> /dev/null; then
         return 0
-    else
-        log_warning "DBeaver installation may have failed"
-        return 1
     fi
+    return 1
+}
+
+remove_dbeaver() {
+    log "Removing DBeaver..."
+    case "$OS_ID" in
+        ubuntu|debian|linuxmint|pop)
+            run_sudo apt-get remove -y dbeaver-ce dbeaver 2>/dev/null || true
+            run_sudo apt-get autoremove -y 2>/dev/null || true
+            ;;
+        fedora)
+            run_sudo dnf remove -y dbeaver-ce dbeaver 2>/dev/null || true
+            ;;
+        opensuse*|suse*)
+            run_sudo zypper --non-interactive remove -y dbeaver-ce dbeaver 2>/dev/null || true
+            ;;
+        arch|manjaro)
+            run_sudo pacman -R --noconfirm dbeaver 2>/dev/null || true
+            ;;
+    esac
+    flatpak uninstall -y io.dbeaver.DBeaverCommunity 2>/dev/null || true
+    run_sudo snap remove dbeaver-ce 2>/dev/null || true
+    rm -rf "$HOME/.local/share/DBeaverData" 2>/dev/null || true
+    rm -rf "$HOME/.dbeaver4" 2>/dev/null || true
+    rm -rf "$HOME/.dbeaver" 2>/dev/null || true
 }
 
 manage_dbeaver() {
@@ -936,7 +587,6 @@ manage_dbeaver() {
             TRUE "install" "$(get_text dbeaver_install)" \
             FALSE "remove" "$(get_text dbeaver_remove)" \
             FALSE "back" "$(get_text dbeaver_back)")
-        
         case "$choice" in
             install)
                 start_progress
@@ -951,7 +601,7 @@ manage_dbeaver() {
                 fi
                 ;;
             remove)
-                if gui_question "$(get_text warning)" "Are you sure you want to remove DBeaver?"; then
+                if gui_question "$(get_text warning)" "Remove DBeaver completely?"; then
                     start_progress
                     update_progress 50 "$(get_text removing_dbeaver)"
                     remove_dbeaver
@@ -961,299 +611,96 @@ manage_dbeaver() {
                 fi
                 ;;
             back|"")
-                return 0
+                return
                 ;;
         esac
     done
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# CHECK PREVIOUS INSTALLATION
-#═══════════════════════════════════════════════════════════════════════════════
-check_previous_installation() {
-    if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
-        return 0
-    fi
-    
-    if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -qi "oracle"; then
-        return 0
-    fi
-    
-    if [ -d "$PROJECT_DIR/apex" ] || [ -d "$PROJECT_DIR/ords" ]; then
-        return 0
-    fi
-    
-    return 1
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# WAIT FOR DATABASE - CRITICAL
-#═══════════════════════════════════════════════════════════════════════════════
-wait_for_database_ready() {
-    log "Waiting for database to be ready..."
-    local timeout=900
-    local start_time=$(date +%s)
-    local check_interval=15
-    
-    while true; do
-        if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
-            sleep $check_interval
-            continue
-        fi
-        
-        if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "DATABASE IS READY"; then
-            log "Database reports READY"
-            
-            if docker exec "$CONTAINER_NAME" bash -c "echo 'SELECT 1 FROM DUAL;' | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba" 2>/dev/null | grep -q "1"; then
-                log "Database connection verified"
-                return 0
-            fi
-        fi
-        
-        local current_time=$(date +%s)
-        local elapsed=$((current_time - start_time))
-        
-        if [ "$elapsed" -gt "$timeout" ]; then
-            log "Database timeout after ${elapsed}s"
-            return 1
-        fi
-        
-        log "Waiting for database... (${elapsed}s elapsed)"
-        sleep $check_interval
-    done
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# INSTALL DEPENDENCIES
-#═══════════════════════════════════════════════════════════════════════════════
-install_dependencies() {
-    log "Installing dependencies for $OS_ID..."
-    
-    case "$OS_ID" in
-        ubuntu|debian|linuxmint|pop)
-            run_sudo apt-get update -qq || true
-            run_sudo apt-get install -y docker.io docker-compose openjdk-17-jdk unzip wget curl net-tools || true
-            ;;
-        fedora)
-            run_sudo dnf install -y docker docker-compose java-17-openjdk unzip wget curl net-tools || true
-            ;;
-        opensuse*|suse*)
-            run_sudo zypper --non-interactive install -y docker docker-compose java-17-openjdk unzip wget curl net-tools || true
-            ;;
-        arch|manjaro)
-            run_sudo pacman -S --noconfirm docker docker-compose jdk17-openjdk unzip wget curl net-tools || true
-            ;;
-        rhel|centos|rocky|alma)
-            run_sudo yum install -y docker docker-compose java-17-openjdk unzip wget curl net-tools || true
-            ;;
-    esac
-    
-    run_sudo systemctl enable docker || true
-    run_sudo systemctl start docker || true
-    run_sudo usermod -aG docker $USER 2>/dev/null || true
-    
-    sleep 5
-    log "Dependencies installed"
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# FIX APEX IMAGES
-#═══════════════════════════════════════════════════════════════════════════════
-fix_apex_images() {
-    log "Fixing APEX images..."
-    
-    if [ ! -d "$IMAGES_DIR" ] || [ $(find "$IMAGES_DIR" -type f 2>/dev/null | wc -l) -lt 100 ]; then
-        rm -rf "$IMAGES_DIR" 2>/dev/null || true
-        if [ -d "$PROJECT_DIR/apex/images" ]; then
-            cp -r "$PROJECT_DIR/apex/images" "$IMAGES_DIR"
-            log "Images copied from apex/images"
-        fi
-    fi
-    
-    chmod -R 755 "$IMAGES_DIR" 2>/dev/null || true
-    
-    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
-    if [ -n "$ORDS_BIN" ]; then
-        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.path "$IMAGES_DIR" 2>/dev/null || true
-        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i 2>/dev/null || true
-        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.doc.root "$IMAGES_DIR" 2>/dev/null || true
-    fi
-    
-    # ✅ FIX: Use variables instead of hardcoded paths
-    cat > "$ORDS_CONFIG_DIR/settings.xml" << SETTINGSEOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<entry key="standalone.context.path">/ords</entry>
-<entry key="standalone.http.port">${ORDS_PORT}</entry>
-<entry key="standalone.static.context.path">/i</entry>
-<entry key="standalone.static.path">${IMAGES_DIR}</entry>
-<entry key="standalone.doc.root">${IMAGES_DIR}</entry>
-<entry key="db.hostname">${DB_HOST}</entry>
-<entry key="db.port">${DB_PORT}</entry>
-<entry key="db.servicename">${DB_SERVICE}</entry>
-<entry key="feature.sdw">true</entry>
-<entry key="feature.rest.enabled.sql">true</entry>
-<entry key="gateway.mode">proxied</entry>
-<entry key="gateway.user">ORDS_PUBLIC_USER</entry>
-</properties>
-SETTINGSEOF
-
-    local APEX_SCHEMA=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
-    [ -z "$APEX_SCHEMA" ] && APEX_SCHEMA="APEX_240100"
-    
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << SQLEOF
-BEGIN
-    ${APEX_SCHEMA}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN NULL;
-END;
-/
-EXIT;
-SQLEOF" 2>/dev/null || true
-
-    log "APEX images fixed"
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# CREATE MANAGEMENT SCRIPTS
-#═══════════════════════════════════════════════════════════════════════════════
 create_management_scripts() {
     log "Creating management scripts..."
-    
     safe_mkdir "$SCRIPTS_DIR"
-    safe_mkdir "$LOG_DIR"
 
-    #---------------------------------------------------------------------------
-    # STATUS SCRIPT
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/status.sh" << 'STATUSEOF'
+    cat > "$SCRIPTS_DIR/stop.sh" << STOPEOF
+#!/bin/bash
+echo "Stopping Oracle APEX services..."
+pkill -9 -f "ords.*serve" 2>/dev/null || true
+pkill -9 -f "java.*ords" 2>/dev/null || true
+docker stop ${CONTAINER_NAME} 2>/dev/null || true
+echo "Services stopped."
+STOPEOF
+    chmod +x "$SCRIPTS_DIR/stop.sh"
+
+    cat > "$SCRIPTS_DIR/status.sh" << STATUSEOF
 #!/bin/bash
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-echo "  Oracle APEX Status - KaizenixCore v4.3"
+echo "  Oracle APEX Status - KaizenixCore v${VERSION}"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
-
-DB_RUN=$(docker inspect -f '{{.State.Running}}' oracle-apex-db 2>/dev/null || echo "false")
-if [ "$DB_RUN" = "true" ]; then
+if docker inspect -f '{{.State.Running}}' ${CONTAINER_NAME} 2>/dev/null | grep -q "true"; then
     echo "  Database:  🟢 Running"
 else
     echo "  Database:  🔴 Stopped"
 fi
-
 if pgrep -f "ords.*serve" >/dev/null 2>&1; then
     echo "  ORDS:      🟢 Running"
 else
     echo "  ORDS:      🔴 Stopped"
 fi
-
 echo ""
-echo "  Endpoints:"
-HTTP_ADMIN=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/apex_admin 2>/dev/null || echo "000")
-HTTP_LOGIN=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/ords/f?p=4550" 2>/dev/null || echo "000")
-HTTP_IMG=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/i/apex_version.txt 2>/dev/null || echo "000")
-echo "    APEX Admin:  HTTP $HTTP_ADMIN"
-echo "    APEX Login:  HTTP $HTTP_LOGIN"
-echo "    Images:      HTTP $HTTP_IMG"
+HTTP=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${ORDS_PORT}/ords/apex_admin 2>/dev/null || echo "000")
+echo "  APEX Admin: HTTP \$HTTP"
 echo ""
 echo "  URLs:"
-echo "    http://localhost:8080/ords/apex_admin"
-echo "    http://localhost:8080/ords/f?p=4550"
+echo "    Admin: http://localhost:${ORDS_PORT}/ords/apex_admin"
+echo "    Login: http://localhost:${ORDS_PORT}/ords/f?p=4550"
 echo ""
 echo "════════════════════════════════════════════════════════════════"
 STATUSEOF
     chmod +x "$SCRIPTS_DIR/status.sh"
 
-    #---------------------------------------------------------------------------
-    # STOP SCRIPT
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/stop.sh" << 'STOPEOF'
-#!/bin/bash
-echo "Stopping Oracle APEX services..."
-pkill -9 -f ords 2>/dev/null || true
-pkill -9 -f java.*ords 2>/dev/null || true
-sleep 3
-docker stop oracle-apex-db 2>/dev/null || true
-echo "✅ All services stopped"
-STOPEOF
-    chmod +x "$SCRIPTS_DIR/stop.sh"
-
-    #---------------------------------------------------------------------------
-    # START SCRIPT - ✅ FIXED: Variables are now expanded correctly
-    #---------------------------------------------------------------------------
     cat > "$SCRIPTS_DIR/start.sh" << STARTEOF
 #!/bin/bash
 PROJECT_DIR="${PROJECT_DIR}"
 ORDS_CONFIG_DIR="${ORDS_CONFIG_DIR}"
 IMAGES_DIR="${IMAGES_DIR}"
 LOG_DIR="${LOG_DIR}"
-DB_PORT="${DB_PORT}"
-DB_SERVICE="${DB_SERVICE}"
 ORDS_PORT="${ORDS_PORT}"
 
-PASS=\$(cat "\$PROJECT_DIR/.db_password" 2>/dev/null)
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Starting Oracle APEX - KaizenixCore v${VERSION}"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
 
+PASS=\$(cat "\$PROJECT_DIR/.db_password" 2>/dev/null)
 if [ -z "\$PASS" ]; then
     echo "❌ Password file not found!"
     exit 1
 fi
 
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  Starting Oracle APEX - KaizenixCore v4.3"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
-
-echo "[1/6] Starting database container..."
-docker start oracle-apex-db 2>/dev/null || {
-    cd "\$PROJECT_DIR" && docker compose up -d 2>/dev/null
-}
-
-echo "[2/6] Waiting for database (2 minutes)..."
+echo "[1/4] Starting database..."
+docker start ${CONTAINER_NAME} 2>/dev/null || true
+echo "      Waiting 2 minutes for database..."
 sleep 120
 
-echo "[3/6] Syncing passwords..."
-docker exec oracle-apex-db resetPassword "\$PASS" 2>/dev/null || true
-sleep 15
+echo "[2/4] Stopping old ORDS..."
+pkill -9 -f ords 2>/dev/null || true
+sleep 5
 
-echo "[4/6] Fixing database users..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << 'SQL'
-ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
-ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK;
-ALTER USER APEX_PUBLIC_USER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK;
-ALTER USER APEX_LISTENER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK;
-ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK;
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-COMMIT;
-EXIT;
-SQL" 2>/dev/null || true
-
-echo "[5/6] Configuring ORDS..."
+echo "[3/4] Starting ORDS..."
 ORDS_BIN=\$(find "\$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
 if [ -n "\$ORDS_BIN" ]; then
     echo "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config secret --password-stdin db.password 2>/dev/null || true
-fi
-
-pkill -9 -f ords 2>/dev/null || true
-sleep 3
-
-echo "[6/6] Starting ORDS..."
-if [ -n "\$ORDS_BIN" ]; then
     export ORDS_CONFIG="\$ORDS_CONFIG_DIR"
     export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-    nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve \\
-        --port \$ORDS_PORT \\
-        --apex-images "\$IMAGES_DIR" \\
-        > "\$LOG_DIR/ords.log" 2>&1 &
-    echo "    ORDS started with PID \$!"
+    nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve --port \$ORDS_PORT --apex-images "\$IMAGES_DIR" > "\$LOG_DIR/ords.log" 2>&1 &
+    echo "      ORDS started with PID \$!"
 fi
 
-echo ""
-echo "Waiting for ORDS to initialize (90 seconds)..."
-sleep 90
+echo "[4/4] Waiting for ORDS (2 minutes)..."
+sleep 120
 
 echo ""
 HTTP=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\$ORDS_PORT/ords/apex_admin 2>/dev/null || echo "000")
@@ -1272,9 +719,6 @@ echo ""
 STARTEOF
     chmod +x "$SCRIPTS_DIR/start.sh"
 
-    #---------------------------------------------------------------------------
-    # FIX SCRIPT - COMPREHENSIVE FOR 571/574/500
-    #---------------------------------------------------------------------------
     cat > "$SCRIPTS_DIR/fix.sh" << FIXEOF
 #!/bin/bash
 PROJECT_DIR="${PROJECT_DIR}"
@@ -1305,23 +749,23 @@ pkill -9 -f java.*ords 2>/dev/null || true
 sleep 5
 
 echo "[2/12] Starting database..."
-docker start oracle-apex-db 2>/dev/null || true
+docker start ${CONTAINER_NAME} 2>/dev/null || true
 echo "      Waiting 2 minutes for database..."
 sleep 120
 
 echo "[3/12] Resetting database password..."
-docker exec oracle-apex-db resetPassword "\$PASS" 2>/dev/null || true
+docker exec ${CONTAINER_NAME} resetPassword "\$PASS" 2>/dev/null || true
 sleep 20
 
 echo "[4/12] Disabling password policies..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << 'SQL'
+docker exec ${CONTAINER_NAME} bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << 'SQL'
 ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
 COMMIT;
 EXIT;
 SQL" 2>/dev/null || true
 
 echo "[5/12] Recreating ORDS_PUBLIC_USER..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQL
+docker exec ${CONTAINER_NAME} bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQL
 BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
 /
 CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY \${PASS} DEFAULT TABLESPACE SYSAUX QUOTA UNLIMITED ON SYSAUX;
@@ -1335,7 +779,7 @@ EXIT;
 SQL" 2>/dev/null || true
 
 echo "[6/12] Fixing APEX users..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQL
+docker exec ${CONTAINER_NAME} bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQL
 BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
 /
 BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
@@ -1347,7 +791,7 @@ EXIT;
 SQL" 2>/dev/null || true
 
 echo "[7/12] Granting proxy permissions..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << 'SQL'
+docker exec ${CONTAINER_NAME} bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << 'SQL'
 ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
@@ -1365,1178 +809,17 @@ echo "[8/12] Reinstalling ORDS connection..."
 ORDS_BIN=\$(find "\$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
 if [ -n "\$ORDS_BIN" ]; then
     chmod +x "\$ORDS_BIN" 2>/dev/null || true
-    
     rm -rf "\$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
     mkdir -p "\$ORDS_CONFIG_DIR/databases/default"
-    
-    printf "%s\n%s\n%s\n" "\$PASS" "\$PASS" "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" install \\
-        --admin-user SYS \\
-        --db-hostname localhost \\
-        --db-port \$DB_PORT \\
-        --db-servicename \$DB_SERVICE \\
-        --feature-sdw true \\
-        --gateway-mode proxied \\
-        --gateway-user ORDS_PUBLIC_USER \\
-        --password-stdin 2>/dev/null || true
-    
-    echo "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config secret --password-stdin db.password 2>/dev/null || true
-fi
-
-echo "[9/12] Fixing APEX images..."
-rm -rf "\$IMAGES_DIR" 2>/dev/null || true
-if [ -d "\$PROJECT_DIR/apex/images" ]; then
-    cp -r "\$PROJECT_DIR/apex/images" "\$IMAGES_DIR"
-    chmod -R 755 "\$IMAGES_DIR"
-fi
-
-if [ -n "\$ORDS_BIN" ]; then
-    "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config set standalone.static.path "\$IMAGES_DIR" 2>/dev/null || true
-    "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config set standalone.static.context.path /i 2>/dev/null || true
-    "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config set standalone.doc.root "\$IMAGES_DIR" 2>/dev/null || true
-fi
-
-echo "[10/12] Setting IMAGE_PREFIX in database..."
-APEX_SCHEMA=\$(cat "\$PROJECT_DIR/.apex_schema" 2>/dev/null)
-[ -z "\$APEX_SCHEMA" ] && APEX_SCHEMA="APEX_240100"
-
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQLEOF
-BEGIN
-    \${APEX_SCHEMA}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
-    \${APEX_SCHEMA}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
-    COMMIT;
-EXCEPTION WHEN OTHERS THEN NULL;
-END;
-/
-EXIT;
-SQLEOF" 2>/dev/null || true
-
-echo "[11/12] Starting ORDS with images..."
-if [ -n "\$ORDS_BIN" ]; then
-    export ORDS_CONFIG="\$ORDS_CONFIG_DIR"
-    export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-    nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve \\
-        --port \$ORDS_PORT \\
-        --apex-images "\$IMAGES_DIR" \\
-        > "\$LOG_DIR/ords.log" 2>&1 &
-    echo "      ORDS started with PID \$!"
-fi
-
-echo "[12/12] Waiting for ORDS (2 minutes)..."
-sleep 120
-
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  VERIFICATION"
-echo "════════════════════════════════════════════════════════════════"
-HTTP_ADMIN=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\$ORDS_PORT/ords/apex_admin 2>/dev/null || echo "000")
-HTTP_LOGIN=\$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:\$ORDS_PORT/ords/f?p=4550" 2>/dev/null || echo "000")
-HTTP_IMG=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\$ORDS_PORT/i/apex_version.txt 2>/dev/null || echo "000")
-
-echo "  APEX Admin:  HTTP \$HTTP_ADMIN"
-echo "  APEX Login:  HTTP \$HTTP_LOGIN"
-echo "  Images:      HTTP \$HTTP_IMG"
-echo ""
-
-if [[ "\$HTTP_ADMIN" =~ ^(200|302|303)\$ ]] && [[ "\$HTTP_IMG" =~ ^(200|304)\$ ]]; then
-    echo "  ✅ SUCCESS! APEX is working with images!"
-    echo ""
-    echo "  Open in browser:"
-    echo "    http://localhost:\$ORDS_PORT/ords/apex_admin"
-    echo "    http://localhost:\$ORDS_PORT/ords/f?p=4550"
-elif [[ "\$HTTP_ADMIN" =~ ^(200|302|303)\$ ]]; then
-    echo "  ⚠️ APEX is working but images may have issues."
-else
-    echo "  ⚠️ Some issues remain. Check logs:"
-    echo "    tail -100 \$LOG_DIR/ords.log"
-fi
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-FIXEOF
-    chmod +x "$SCRIPTS_DIR/fix.sh"
-
-    #---------------------------------------------------------------------------
-    # LOGS SCRIPT
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/logs.sh" << 'LOGSEOF'
-#!/bin/bash
-PROJECT_DIR="$HOME/oracle-apex-complete"
-echo "Showing last 100 lines of ORDS log..."
-echo "Press Ctrl+C to exit"
-echo ""
-tail -f "$PROJECT_DIR/logs/ords.log" 2>/dev/null || echo "Log file not found"
-LOGSEOF
-    chmod +x "$SCRIPTS_DIR/logs.sh"
-
-    #---------------------------------------------------------------------------
-    # RESET APEX PASSWORD SCRIPT
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/reset-apex-password.sh" << RESETEOF
-#!/bin/bash
-PROJECT_DIR="${PROJECT_DIR}"
-DB_PORT="${DB_PORT}"
-DB_SERVICE="${DB_SERVICE}"
-
-PASS=\$(cat "\$PROJECT_DIR/.db_password" 2>/dev/null)
-
-if [ -z "\$PASS" ]; then
-    echo "❌ Password file not found!"
-    exit 1
-fi
-
-echo "Enter new APEX admin password:"
-read -s NEW_PASS
-
-if [[ ! "\$NEW_PASS" =~ ^[a-zA-Z][a-zA-Z0-9]{5,}\$ ]]; then
-    echo "❌ Invalid password format!"
-    exit 1
-fi
-
-APEX_SCHEMA=\$(cat "\$PROJECT_DIR/.apex_schema" 2>/dev/null)
-[ -z "\$APEX_SCHEMA" ] && APEX_SCHEMA="APEX_240100"
-
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQLEOF
-BEGIN
-    \${APEX_SCHEMA}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
-    \${APEX_SCHEMA}.APEX_UTIL.EDIT_USER(
-        p_user_id       => \${APEX_SCHEMA}.APEX_UTIL.GET_USER_ID('ADMIN'),
-        p_user_name     => 'ADMIN',
-        p_web_password  => '\${NEW_PASS}',
-        p_new_password  => '\${NEW_PASS}',
-        p_change_password_on_first_use => 'N'
-    );
-    COMMIT;
-END;
-/
-EXIT;
-SQLEOF"
-
-echo "\$NEW_PASS" > "\$PROJECT_DIR/.apex_password"
-chmod 600 "\$PROJECT_DIR/.apex_password"
-
-echo "✅ APEX admin password updated!"
-RESETEOF
-    chmod +x "$SCRIPTS_DIR/reset-apex-password.sh"
-
-    #---------------------------------------------------------------------------
-    # GUI LAUNCHER
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/launch-gui.sh" << GUIEOF
-#!/bin/bash
-PROJECT_DIR="${PROJECT_DIR}"
-SCRIPTS_DIR="${SCRIPTS_DIR}"
-ORDS_PORT="${ORDS_PORT}"
-
-GUI=""
-if command -v yad >/dev/null 2>&1; then
-    GUI="yad"
-elif command -v zenity >/dev/null 2>&1; then
-    GUI="zenity"
-else
-    echo "No GUI tool found. Please install yad or zenity."
-    exit 1
-fi
-
-show_menu() {
-    local db_status="🔴 Stopped"
-    local ords_status="🔴 Stopped"
-    
-    if docker inspect -f '{{.State.Running}}' oracle-apex-db 2>/dev/null | grep -q "true"; then
-        db_status="🟢 Running"
-    fi
-    
-    if pgrep -f "ords.*serve" >/dev/null 2>&1; then
-        ords_status="🟢 Running"
-    fi
-    
-    local status_text="Database: \$db_status | ORDS: \$ords_status"
-    
-    if [ "\$GUI" = "yad" ]; then
-        yad --list --title="Oracle APEX Manager - KaizenixCore v4.3" \\
-            --text="\$status_text\n\nSelect an action:" \\
-            --radiolist --column="" --column="ID" --column="Action" \\
-            TRUE "start" "▶️  Start Services" \\
-            FALSE "stop" "⏹️  Stop Services" \\
-            FALSE "restart" "🔄  Restart Services" \\
-            FALSE "fix" "🔧  Fix Problems (571/574/500)" \\
-            FALSE "status" "📊  Check Status" \\
-            FALSE "logs" "📜  View Logs" \\
-            FALSE "open_admin" "🌐  Open Admin Panel" \\
-            FALSE "open_login" "🔐  Open Login Page" \\
-            FALSE "exit" "❌  Exit" \\
-            --width=500 --height=500 --center \\
-            --button="Cancel:1" --button="OK:0" \\
-            --print-column=2 --hide-column=2 \\
-            --borders=15 2>/dev/null
-    else
-        zenity --list --title="Oracle APEX Manager - KaizenixCore v4.3" \\
-            --text="\$status_text\n\nSelect an action:" \\
-            --radiolist --column="" --column="ID" --column="Action" \\
-            TRUE "start" "▶️  Start Services" \\
-            FALSE "stop" "⏹️  Stop Services" \\
-            FALSE "restart" "🔄  Restart Services" \\
-            FALSE "fix" "🔧  Fix Problems (571/574/500)" \\
-            FALSE "status" "📊  Check Status" \\
-            FALSE "logs" "📜  View Logs" \\
-            FALSE "open_admin" "🌐  Open Admin Panel" \\
-            FALSE "open_login" "🔐  Open Login Page" \\
-            FALSE "exit" "❌  Exit" \\
-            --width=500 --height=500 \\
-            --ok-label="OK" --cancel-label="Cancel" \\
-            --hide-column=2 2>/dev/null
-    fi
-}
-
-run_in_terminal() {
-    local cmd="\$1"
-    local title="\$2"
-    
-    if command -v gnome-terminal >/dev/null 2>&1; then
-        gnome-terminal -- bash -c "\$cmd; echo; echo 'Press Enter to close...'; read"
-    elif command -v konsole >/dev/null 2>&1; then
-        konsole -e bash -c "\$cmd; echo; echo 'Press Enter to close...'; read" &
-    elif command -v xfce4-terminal >/dev/null 2>&1; then
-        xfce4-terminal -e "bash -c '\$cmd; echo; echo Press Enter to close...; read'" &
-    elif command -v xterm >/dev/null 2>&1; then
-        xterm -title "\$title" -e "bash -c '\$cmd; echo; echo Press Enter to close...; read'" &
-    else
-        local output=\$(\$cmd 2>&1)
-        if [ "\$GUI" = "yad" ]; then
-            echo "\$output" | yad --text-info --title="\$title" --width=700 --height=500 --center 2>/dev/null
-        else
-            echo "\$output" | zenity --text-info --title="\$title" --width=700 --height=500 2>/dev/null
-        fi
-    fi
-}
-
-while true; do
-    choice=\$(show_menu)
-    choice=\$(echo "\$choice" | tr -d '|' | tr -d ' ')
-    
-    [ -z "\$choice" ] && exit 0
-    
-    case "\$choice" in
-        start)
-            run_in_terminal "bash '\$SCRIPTS_DIR/start.sh'" "Starting Oracle APEX"
-            ;;
-        stop)
-            bash "\$SCRIPTS_DIR/stop.sh"
-            if [ "\$GUI" = "yad" ]; then
-                yad --info --title="Oracle APEX" --text="Services stopped." --width=300 --center --timeout=3 2>/dev/null
-            else
-                zenity --info --title="Oracle APEX" --text="Services stopped." --width=300 --timeout=3 2>/dev/null
-            fi
-            ;;
-        restart)
-            bash "\$SCRIPTS_DIR/stop.sh"
-            sleep 3
-            run_in_terminal "bash '\$SCRIPTS_DIR/start.sh'" "Restarting Oracle APEX"
-            ;;
-        fix)
-            run_in_terminal "bash '\$SCRIPTS_DIR/fix.sh'" "Fixing Oracle APEX"
-            ;;
-        status)
-            run_in_terminal "bash '\$SCRIPTS_DIR/status.sh'" "Oracle APEX Status"
-            ;;
-        logs)
-            if [ "\$GUI" = "yad" ]; then
-                tail -200 "\$PROJECT_DIR/logs/ords.log" 2>/dev/null | yad --text-info \\
-                    --title="ORDS Logs" --width=900 --height=600 --center \\
-                    --fontname="monospace 10" 2>/dev/null
-            else
-                tail -200 "\$PROJECT_DIR/logs/ords.log" 2>/dev/null | zenity --text-info \\
-                    --title="ORDS Logs" --width=900 --height=600 \\
-                    --font="monospace" 2>/dev/null
-            fi
-            ;;
-        open_admin)
-            xdg-open "http://localhost:\$ORDS_PORT/ords/apex_admin" 2>/dev/null &
-            ;;
-        open_login)
-            xdg-open "http://localhost:\$ORDS_PORT/ords/f?p=4550" 2>/dev/null &
-            ;;
-        exit)
-            exit 0
-            ;;
-    esac
-    
-    sleep 0.5
-done
-GUIEOF
-    chmod +x "$SCRIPTS_DIR/launch-gui.sh"
-
-    #---------------------------------------------------------------------------
-    # OPEN DBEAVER SCRIPT
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/open-dbeaver.sh" << 'DBEAVEREOF'
-#!/bin/bash
-echo "Opening DBeaver..."
-echo ""
-echo "Connection details for Oracle APEX database:"
-echo "  Host:     localhost"
-echo "  Port:     1521"
-echo "  Database: XEPDB1"
-echo "  Username: SYS (as SYSDBA)"
-echo "  Password: (your database password)"
-echo ""
-
-if command -v dbeaver-ce &> /dev/null; then
-    dbeaver-ce &
-elif command -v dbeaver &> /dev/null; then
-    dbeaver &
-elif command -v flatpak &> /dev/null && flatpak list | grep -q dbeaver; then
-    flatpak run io.dbeaver.DBeaverCommunity &
-elif command -v snap &> /dev/null && snap list | grep -q dbeaver; then
-    snap run dbeaver-ce &
-else
-    echo "DBeaver not found. Please install it first."
-    exit 1
-fi
-DBEAVEREOF
-    chmod +x "$SCRIPTS_DIR/open-dbeaver.sh"
-
-    #---------------------------------------------------------------------------
-    # DESKTOP FILE
-    #---------------------------------------------------------------------------
-    safe_mkdir "$HOME/.local/share/applications"
-    safe_mkdir "$HOME/.local/share/icons"
-    
-    # Create SVG icon
-    cat > "$PROJECT_DIR/oracle-apex-icon.svg" << 'SVGEOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FF4444;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#CC0000;stop-opacity:1"/>
-    </linearGradient>
-  </defs>
-  <rect x="20" y="20" width="216" height="216" rx="40" fill="url(#grad1)"/>
-  <text x="128" y="105" font-family="Arial Black, sans-serif" font-size="52" font-weight="bold" fill="white" text-anchor="middle">APEX</text>
-  <text x="128" y="155" font-family="Arial, sans-serif" font-size="28" font-weight="600" fill="rgba(255,255,255,0.95)" text-anchor="middle">Manager</text>
-  <text x="128" y="195" font-family="Arial, sans-serif" font-size="18" fill="rgba(255,255,255,0.75)" text-anchor="middle">KaizenixCore</text>
-</svg>
-SVGEOF
-
-    cp "$PROJECT_DIR/oracle-apex-icon.svg" "$HOME/.local/share/icons/" 2>/dev/null || true
-
-    cat > "$HOME/.local/share/applications/oracle-apex.desktop" << DESKTOPEOF
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Oracle APEX Manager
-GenericName=Database Development Tool
-Comment=Manage Oracle APEX and ORDS - KaizenixCore v${VERSION}
-Exec=bash ${SCRIPTS_DIR}/launch-gui.sh
-Icon=${HOME}/.local/share/icons/oracle-apex-icon.svg
-Terminal=false
-Categories=Development;Database;IDE;
-Keywords=oracle;apex;ords;database;
-StartupNotify=true
-DESKTOPEOF
-    chmod +x "$HOME/.local/share/applications/oracle-apex.desktop"
-    
-    update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
-    
-    log "Management scripts created"
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# CREATE SYSTEMD SERVICE
-#═══════════════════════════════════════════════════════════════════════════════
-create_systemd_service() {
-    if [ "$OS_TYPE" != "linux" ]; then
-        log "Systemd service only available on Linux"
-        return 0
-    fi
-    
-    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
-    if [ -z "$ORDS_BIN" ]; then
-        log "ORDS binary not found, cannot create service"
-        return 1
-    fi
-    
-    log "Creating systemd services..."
-    
-    # Create combined service script
-    cat > "$SCRIPTS_DIR/oracle-apex-service.sh" << SERVICEEOF
-#!/bin/bash
-PROJECT_DIR="${PROJECT_DIR}"
-ORDS_CONFIG_DIR="${ORDS_CONFIG_DIR}"
-ORDS_BIN="${ORDS_BIN}"
-IMAGES_DIR="${IMAGES_DIR}"
-LOG_DIR="${LOG_DIR}"
-ORDS_PORT="${ORDS_PORT}"
-
-case "\$1" in
-    start)
-        echo "Starting Oracle APEX services..."
-        docker start ${CONTAINER_NAME} 2>/dev/null
-        sleep 120
-        
-        PASS=\$(cat "\$PROJECT_DIR/.db_password" 2>/dev/null)
-        if [ -n "\$PASS" ]; then
-            echo "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config secret --password-stdin db.password 2>/dev/null || true
-        fi
-        
-        export ORDS_CONFIG="\$ORDS_CONFIG_DIR"
-        export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-        nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve \\
-            --port \$ORDS_PORT \\
-            --apex-images "\$IMAGES_DIR" \\
-            > "\$LOG_DIR/ords.log" 2>&1 &
-        echo \$! > "\$PROJECT_DIR/ords.pid"
-        
-        echo "Oracle APEX started"
-        ;;
-    stop)
-        echo "Stopping Oracle APEX services..."
-        if [ -f "\$PROJECT_DIR/ords.pid" ]; then
-            kill \$(cat "\$PROJECT_DIR/ords.pid") 2>/dev/null
-            rm -f "\$PROJECT_DIR/ords.pid"
-        fi
-        pkill -9 -f ords 2>/dev/null
-        docker stop ${CONTAINER_NAME} 2>/dev/null
-        echo "Oracle APEX stopped"
-        ;;
-    restart)
-        \$0 stop
-        sleep 5
-        \$0 start
-        ;;
-    status)
-        if docker inspect -f '{{.State.Running}}' ${CONTAINER_NAME} 2>/dev/null | grep -q "true"; then
-            echo "Database: Running"
-        else
-            echo "Database: Stopped"
-        fi
-        
-        if pgrep -f "ords.*serve" >/dev/null 2>&1; then
-            echo "ORDS: Running"
-        else
-            echo "ORDS: Stopped"
-        fi
-        ;;
-    *)
-        echo "Usage: \$0 {start|stop|restart|status}"
-        exit 1
-        ;;
-esac
-SERVICEEOF
-    chmod +x "$SCRIPTS_DIR/oracle-apex-service.sh"
-    
-    run_sudo tee /etc/systemd/system/oracle-apex.service > /dev/null << SYSTEMDEOF
-[Unit]
-Description=Oracle APEX and ORDS Service - KaizenixCore v${VERSION}
-Documentation=https://github.com/KaizenixCore/oracle-apex-installer
-After=network.target docker.service
-Requires=docker.service
-
-[Service]
-Type=forking
-User=$USER
-Group=$USER
-WorkingDirectory=$PROJECT_DIR
-ExecStart=$SCRIPTS_DIR/oracle-apex-service.sh start
-ExecStop=$SCRIPTS_DIR/oracle-apex-service.sh stop
-ExecReload=$SCRIPTS_DIR/oracle-apex-service.sh restart
-RemainAfterExit=yes
-TimeoutStartSec=300
-TimeoutStopSec=60
-Restart=on-failure
-RestartSec=30
-
-[Install]
-WantedBy=multi-user.target
-SYSTEMDEOF
-
-    run_sudo systemctl daemon-reload
-    run_sudo systemctl enable oracle-apex.service
-    
-    log "Systemd service created and enabled"
-    
-    gui_info "$(get_text info)" "$(get_text service_created)"
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# REPAIR INSTALLATION - COMPREHENSIVE FIX FOR 571
-#═══════════════════════════════════════════════════════════════════════════════
-repair_installation() {
-    log_step "REPAIR INSTALLATION - COMPREHENSIVE FIX FOR ERROR 571"
-    
-    if [ -z "$ORACLE_PASSWORD" ] || [ -z "$APEX_ADMIN_PASSWORD" ]; then
-        log_error "Passwords not set!"
-        gui_error "$(get_text error)" "Passwords not configured."
-        return 1
-    fi
-    
-    start_progress
-    
-    # Step 1: Stop ORDS
-    update_progress 5 "Stopping ORDS..."
-    pkill -9 -f "ords.*serve" 2>/dev/null || true
-    pkill -9 -f "java.*ords" 2>/dev/null || true
-    sleep 5
-    
-    # Step 2: Start database
-    update_progress 10 "Starting database..."
-    docker start "$CONTAINER_NAME" 2>/dev/null || true
-    sleep 10
-    
-    # Step 3: Wait for database
-    update_progress 15 "Waiting for database (5-10 minutes)..."
-    
-    local db_ready=false
-    for i in {1..120}; do
-        if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "DATABASE IS READY"; then
-            db_ready=true
-            break
-        fi
-        sleep 5
-    done
-    
-    sleep 60
-    
-    # Step 4: Reset password
-    update_progress 25 "$(get_text resetting_password)"
-    docker exec "$CONTAINER_NAME" resetPassword "$ORACLE_PASSWORD" >> "$INSTALL_LOG" 2>&1 || true
-    sleep 20
-    
-    # Step 5: Disable password policies
-    update_progress 30 "Disabling password policies..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 6: Fix ORDS_PUBLIC_USER
-    update_progress 40 "Fixing ORDS_PUBLIC_USER..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY \"${ORACLE_PASSWORD}\" DEFAULT TABLESPACE SYSAUX QUOTA UNLIMITED ON SYSAUX;
-GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
-GRANT CREATE SESSION, ALTER SESSION TO ORDS_PUBLIC_USER;
-GRANT CREATE PROCEDURE, CREATE SEQUENCE, CREATE TABLE, CREATE TRIGGER, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO ORDS_PUBLIC_USER;
-GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
-ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
-
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 7: Fix APEX users
-    update_progress 50 "Fixing APEX users..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 8: Reset APEX admin password
-    update_progress 55 "Resetting APEX admin password..."
-    local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
-    [ -z "$apex_schema" ] && apex_schema="APEX_240100"
-    
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
-BEGIN
-    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
-    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
-    ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
-    
-    BEGIN
-        ${apex_schema}.APEX_UTIL.EDIT_USER(
-            p_user_id       => ${apex_schema}.APEX_UTIL.GET_USER_ID('ADMIN'),
-            p_user_name     => 'ADMIN',
-            p_web_password  => '${APEX_ADMIN_PASSWORD}',
-            p_new_password  => '${APEX_ADMIN_PASSWORD}',
-            p_change_password_on_first_use => 'N',
-            p_account_locked => 'N'
-        );
-    EXCEPTION WHEN OTHERS THEN
-        ${apex_schema}.APEX_UTIL.CREATE_USER(
-            p_user_name     => 'ADMIN',
-            p_email_address => 'admin@localhost',
-            p_web_password  => '${APEX_ADMIN_PASSWORD}',
-            p_developer_privs => 'ADMIN:CREATE:DATA_LOADER:EDIT:HELP:MONITOR:SQL',
-            p_change_password_on_first_use => 'N'
-        );
-    END;
-    
-    COMMIT;
-END;
-/
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 9: Reinstall ORDS
-    update_progress 65 "Reinstalling ORDS connection..."
-    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
-    
-    if [ -n "$ORDS_BIN" ]; then
-        rm -rf "$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
-        mkdir -p "$ORDS_CONFIG_DIR/databases/default"
-        
-        local PASS_FILE=$(mktemp)
-        printf "%s\n%s\n%s\n" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" > "$PASS_FILE"
-
-        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
-            --admin-user SYS \
-            --db-hostname localhost \
-            --db-port "$DB_PORT" \
-            --db-servicename "$DB_SERVICE" \
-            --feature-sdw true \
-            --feature-rest-enabled-sql true \
-            --gateway-mode proxied \
-            --gateway-user ORDS_PUBLIC_USER \
-            --password-stdin < "$PASS_FILE" >> "$INSTALL_LOG" 2>&1 || true
-
-        rm -f "$PASS_FILE"
-        
-        echo "$ORACLE_PASSWORD" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config secret --password-stdin db.password >> "$INSTALL_LOG" 2>&1 || true
-    fi
-    
-    # Step 10: Fix images
-    update_progress 75 "$(get_text fixing_images)"
-    fix_apex_images
-    
-    # Step 11: Save passwords
-    update_progress 80 "Saving configuration..."
-    echo "$ORACLE_PASSWORD" > "$PROJECT_DIR/.db_password"
-    echo "$APEX_ADMIN_PASSWORD" > "$PROJECT_DIR/.apex_password"
-    chmod 600 "$PROJECT_DIR/.db_password" "$PROJECT_DIR/.apex_password"
-    
-    # Step 12: Start ORDS
-    update_progress 85 "Starting ORDS..."
-    pkill -9 -f "ords.*serve" 2>/dev/null || true
-    sleep 5
-    run_sudo fuser -k "${ORDS_PORT}/tcp" 2>/dev/null || true
-    sleep 2
-
-    if [ -n "$ORDS_BIN" ]; then
-        export ORDS_CONFIG="$ORDS_CONFIG_DIR"
-        export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-        
-        nohup "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
-            --port "$ORDS_PORT" \
-            --apex-images "$IMAGES_DIR" \
-            > "$LOG_DIR/ords.log" 2>&1 &
-        
-        echo "$!" > "$PROJECT_DIR/ords.pid"
-    fi
-
-    update_progress 95 "Waiting for ORDS (2 minutes)..."
-    sleep 120
-
-    update_progress 100 "$(get_text verifying)"
-    
-    local http_admin=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/ords/apex_admin" 2>/dev/null || echo "000")
-    
-    stop_progress
-    
-    if [[ "$http_admin" =~ ^(200|302|303)$ ]]; then
-        log_success "REPAIR SUCCESSFUL! APEX is working!"
-        gui_info "$(get_text success_title)" \
-            "✅ Repair Completed Successfully!\n\n🌐 Admin Panel:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\n🔐 Login Page:\nhttp://localhost:${ORDS_PORT}/ords/f?p=4550" 600 400
-        return 0
-    else
-        log_warning "Repair completed but APEX may need more time"
-        gui_warning "$(get_text warning)" \
-            "⚠️ Repair completed but APEX is still initializing.\n\nPlease wait 2-3 minutes and try:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin" 600 400
-        return 0
-    fi
-}
-
-#═══════════════════════════════════════════════════════════════════════════════
-# MAIN INSTALLATION FUNCTION
-#═══════════════════════════════════════════════════════════════════════════════
-run_fresh_installation() {
-    log "Starting fresh installation v${VERSION}..."
-    
-    # Create directories
-    safe_mkdir "$PROJECT_DIR"
-    safe_mkdir "$DOWNLOADS_DIR"
-    safe_mkdir "$LOG_DIR"
-    safe_mkdir "$IMAGES_DIR"
-    safe_mkdir "$SCRIPTS_DIR"
-    safe_mkdir "$ORDS_CONFIG_DIR"
-    safe_mkdir "$ORDS_CONFIG_DIR/databases/default"
-    safe_mkdir "$ORDS_CONFIG_DIR/global"
-    safe_touch "$INSTALL_LOG"
-    safe_touch "$LOG_DIR/ords.log"
-    
-    start_progress
-    
-    # Step 1: Save passwords
-    update_progress 2 "$(get_text step) 1/26: Saving configuration..."
-    echo "$ORACLE_PASSWORD" > "$PROJECT_DIR/.db_password"
-    echo "$APEX_ADMIN_PASSWORD" > "$PROJECT_DIR/.apex_password"
-    chmod 600 "$PROJECT_DIR/.db_password" "$PROJECT_DIR/.apex_password"
-
-    # Step 2: Install dependencies
-    update_progress 5 "$(get_text step) 2/26: $(get_text installing_deps)"
-    install_dependencies
-
-    # Step 3: Download APEX
-    update_progress 10 "$(get_text step) 3/26: $(get_text downloading) APEX..."
-    if [ ! -f "$DOWNLOADS_DIR/apex-latest.zip" ]; then
-        wget -q --show-progress -O "$DOWNLOADS_DIR/apex-latest.zip" "$APEX_URL" 2>/dev/null || \
-        curl -L -o "$DOWNLOADS_DIR/apex-latest.zip" "$APEX_URL" 2>/dev/null || true
-    fi
-
-    # Step 4: Download ORDS
-    update_progress 15 "$(get_text step) 4/26: $(get_text downloading) ORDS..."
-    if [ ! -f "$DOWNLOADS_DIR/ords-latest.zip" ]; then
-        wget -q --show-progress -O "$DOWNLOADS_DIR/ords-latest.zip" "$ORDS_URL" 2>/dev/null || \
-        curl -L -o "$DOWNLOADS_DIR/ords-latest.zip" "$ORDS_URL" 2>/dev/null || true
-    fi
-
-    # Step 5: Extract files
-    update_progress 18 "$(get_text step) 5/26: $(get_text extracting)"
-    cd "$PROJECT_DIR" || exit 1
-    
-    rm -rf apex ords 2>/dev/null || true
-    unzip -q -o "$DOWNLOADS_DIR/apex-latest.zip" 2>/dev/null || true
-    mkdir -p ords
-    unzip -q -o "$DOWNLOADS_DIR/ords-latest.zip" -d ords 2>/dev/null || true
-    
-    find ords -name "ords" -type f -exec chmod +x {} \; 2>/dev/null || true
-    
-    rm -rf "$IMAGES_DIR" 2>/dev/null || true
-    cp -r "$PROJECT_DIR/apex/images" "$IMAGES_DIR" 2>/dev/null || true
-    chmod -R 755 "$IMAGES_DIR" 2>/dev/null || true
-
-    # Step 6: Create Docker Compose
-    update_progress 22 "$(get_text step) 6/26: Creating Docker configuration..."
-    cat > "$PROJECT_DIR/docker-compose.yml" << COMPOSEOF
-version: '3.8'
-services:
-  oracle-db:
-    image: ${ORACLE_IMAGE}
-    container_name: ${CONTAINER_NAME}
-    hostname: ${CONTAINER_NAME}
-    ports:
-      - "${DB_PORT}:1521"
-    environment:
-      - ORACLE_PASSWORD=${ORACLE_PASSWORD}
-    volumes:
-      - oracle-apex-data:/opt/oracle/oradata
-      - ./apex:/opt/oracle/apex:ro
-    shm_size: 2g
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "sqlplus", "-L", "sys/${ORACLE_PASSWORD}@//localhost:1521/${DB_SERVICE} as sysdba", "@/dev/null"]
-      interval: 60s
-      timeout: 30s
-      retries: 10
-      start_period: 300s
-
-volumes:
-  oracle-apex-data:
-    name: oracle-apex-data
-COMPOSEOF
-
-    # Step 7: Start Database
-    update_progress 26 "$(get_text step) 7/26: $(get_text starting_db)"
-    cd "$PROJECT_DIR" || exit 1
-    docker compose up -d 2>/dev/null || docker-compose up -d 2>/dev/null || true
-    
-    update_progress 30 "Waiting for database (5-10 minutes)..."
-    wait_for_database_ready || true
-    sleep 60
-
-    # Step 8: Reset password
-    update_progress 35 "$(get_text step) 8/26: $(get_text resetting_password)"
-    docker exec "$CONTAINER_NAME" resetPassword "$ORACLE_PASSWORD" >> "$INSTALL_LOG" 2>&1 || true
-    sleep 30
-
-    # Step 9: Disable password policies
-    update_progress 38 "$(get_text step) 9/26: Disabling password policies..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 10: Install APEX
-    update_progress 40 "$(get_text step) 10/26: $(get_text installing_apex)"
-    docker exec "$CONTAINER_NAME" bash -c "cd /opt/oracle/apex && sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-@apexins.sql SYSAUX SYSAUX TEMP /i/
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 11: Reset image prefix
-    update_progress 48 "$(get_text step) 11/26: $(get_text fixing_images)"
-    docker exec "$CONTAINER_NAME" bash -c "cd /opt/oracle/apex && sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-@utilities/reset_image_prefix.sql
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 12: APEX REST config
-    update_progress 50 "$(get_text step) 12/26: Configuring REST services..."
-    docker exec "$CONTAINER_NAME" bash -c "cd /opt/oracle/apex && sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
-@apex_rest_config.sql ${ORACLE_PASSWORD} ${ORACLE_PASSWORD}
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 13: Create ORDS_PUBLIC_USER
-    update_progress 54 "$(get_text step) 13/26: Creating ORDS_PUBLIC_USER..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY \"${ORACLE_PASSWORD}\" DEFAULT TABLESPACE SYSAUX QUOTA UNLIMITED ON SYSAUX;
-GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
-GRANT CREATE SESSION, ALTER SESSION TO ORDS_PUBLIC_USER;
-GRANT CREATE PROCEDURE, CREATE SEQUENCE, CREATE TABLE, CREATE TRIGGER, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO ORDS_PUBLIC_USER;
-GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
-ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
-
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 14: Fix APEX users
-    update_progress 58 "$(get_text step) 14/26: Fixing APEX users..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 15: Grant proxy permissions
-    update_progress 62 "$(get_text step) 15/26: Granting proxy permissions..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 16: Find APEX schema and create admin
-    update_progress 66 "$(get_text step) 16/26: Creating APEX admin..."
-    local apex_schema
-    apex_schema=$(docker exec "$CONTAINER_NAME" bash -c "echo \"SET HEADING OFF FEEDBACK OFF PAGESIZE 0; SELECT USERNAME FROM ALL_USERS WHERE USERNAME LIKE 'APEX_2%' ORDER BY USERNAME DESC FETCH FIRST 1 ROW ONLY;\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba" 2>/dev/null | grep -E "^APEX_" | head -1 | tr -d ' ') || true
-    
-    [ -z "$apex_schema" ] && apex_schema="APEX_240100"
-    echo "$apex_schema" > "$PROJECT_DIR/.apex_schema"
-
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
-BEGIN
-    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
-    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
-    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('RESTFUL_SERVICES_ENABLED', 'Y');
-    ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
-    
-    BEGIN
-        ${apex_schema}.APEX_UTIL.CREATE_USER(
-            p_user_name     => 'ADMIN',
-            p_email_address => 'admin@localhost',
-            p_web_password  => '${APEX_ADMIN_PASSWORD}',
-            p_developer_privs => 'ADMIN:CREATE:DATA_LOADER:EDIT:HELP:MONITOR:SQL',
-            p_change_password_on_first_use => 'N'
-        );
-    EXCEPTION WHEN OTHERS THEN
-        ${apex_schema}.APEX_UTIL.EDIT_USER(
-            p_user_id       => ${apex_schema}.APEX_UTIL.GET_USER_ID('ADMIN'),
-            p_user_name     => 'ADMIN',
-            p_web_password  => '${APEX_ADMIN_PASSWORD}',
-            p_new_password  => '${APEX_ADMIN_PASSWORD}',
-            p_change_password_on_first_use => 'N'
-        );
-    END;
-    
-    COMMIT;
-END;
-/
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 17: Install ORDS
-    update_progress 70 "$(get_text step) 17/26: Installing ORDS..."
-    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
-
-    if [ -z "$ORDS_BIN" ]; then
-        log_error "ORDS binary not found!"
-        stop_progress
-        gui_error "$(get_text error)" "ORDS binary not found"
-        return 1
-    fi
-
-    chmod +x "$ORDS_BIN" 2>/dev/null || true
-
-    rm -rf "$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
-    mkdir -p "$ORDS_CONFIG_DIR/databases/default"
-    mkdir -p "$ORDS_CONFIG_DIR/global"
-
-    local PASS_FILE=$(mktemp)
-    printf "%s\n%s\n%s\n" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" > "$PASS_FILE"
-
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
+    printf "%s\n%s\n%s\n" "\$PASS" "\$PASS" "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" install \
         --admin-user SYS \
         --db-hostname localhost \
-        --db-port "$DB_PORT" \
-        --db-servicename "$DB_SERVICE" \
+        --db-port \$DB_PORT \
+        --db-servicename \$DB_SERVICE \
         --feature-sdw true \
-        --feature-rest-enabled-sql true \
         --gateway-mode proxied \
         --gateway-user ORDS_PUBLIC_USER \
-        --password-stdin < "$PASS_FILE" >> "$INSTALL_LOG" 2>&1 || true
-
-    rm -f "$PASS_FILE"
-
-    # Step 18: Configure ORDS
-    update_progress 75 "$(get_text step) 18/26: $(get_text configuring_ords)"
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.http.port "$ORDS_PORT" >> "$INSTALL_LOG" 2>&1 || true
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.context.path /ords >> "$INSTALL_LOG" 2>&1 || true
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i >> "$INSTALL_LOG" 2>&1 || true
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.path "$IMAGES_DIR" >> "$INSTALL_LOG" 2>&1 || true
-    "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.doc.root "$IMAGES_DIR" >> "$INSTALL_LOG" 2>&1 || true
-    
-    echo "$ORACLE_PASSWORD" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config secret --password-stdin db.password >> "$INSTALL_LOG" 2>&1 || true
-    
-    # ✅ FIX: Create settings.xml with variables
-    cat > "$ORDS_CONFIG_DIR/settings.xml" << SETTINGSEOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-<properties>
-<entry key="standalone.context.path">/ords</entry>
-<entry key="standalone.http.port">${ORDS_PORT}</entry>
-<entry key="standalone.static.context.path">/i</entry>
-<entry key="standalone.static.path">${IMAGES_DIR}</entry>
-<entry key="standalone.doc.root">${IMAGES_DIR}</entry>
-<entry key="db.hostname">${DB_HOST}</entry>
-<entry key="db.port">${DB_PORT}</entry>
-<entry key="db.servicename">${DB_SERVICE}</entry>
-<entry key="feature.sdw">true</entry>
-<entry key="feature.rest.enabled.sql">true</entry>
-<entry key="gateway.mode">proxied</entry>
-<entry key="gateway.user">ORDS_PUBLIC_USER</entry>
-</properties>
-SETTINGSEOF
-
-    # Step 19: Final user fixes
-    update_progress 78 "$(get_text step) 19/26: Final database configuration..."
-    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
-ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
-ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
-ALTER USER APEX_LISTENER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
-ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-COMMIT;
-EXIT;
-EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-
-    # Step 20: Start ORDS
-    update_progress 82 "$(get_text step) 20/26: Starting ORDS..."
-    pkill -9 -f "ords.*serve" 2>/dev/null || true
-    pkill -9 -f "java.*ords" 2>/dev/null || true
-    sleep 5
-    run_sudo fuser -k "${ORDS_PORT}/tcp" 2>/dev/null || true
-    sleep 2
-
-    export ORDS_CONFIG="$ORDS_CONFIG_DIR"
-    export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-    
-    nohup "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
-        --port "$ORDS_PORT" \
-        --apex-images "$IMAGES_DIR" \
-        > "$LOG_DIR/ords.log" 2>&1 &
-    
-    echo "$!" > "$PROJECT_DIR/ords.pid"
-
-    # Step 21: Wait for ORDS
-    update_progress 88 "$(get_text step) 21/26: Waiting for ORDS (2 minutes)..."
-    sleep 120
-
-    # Step 22: Create management scripts
-    update_progress 92 "$(get_text step) 22/26: $(get_text creating_scripts)"
-    create_management_scripts
-
-    # Step 23: Verify installation
-    update_progress 96 "$(get_text step) 23/26: $(get_text verifying)"
-    local http_admin=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/ords/apex_admin" 2>/dev/null || echo "000")
-    local http_img=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/i/apex_version.txt" 2>/dev/null || echo "000")
-    log "Verification - Admin: $http_admin, Images: $http_img"
-
-    # Step 24: Complete
-    update_progress 100 "$(get_text completed)"
-    stop_progress
-
-    # Show success message
-    local success_msg=$(get_text success_text)
-    success_msg="${success_msg//%PASSWORD%/$APEX_ADMIN_PASSWORD}"
-    gui_info "$(get_text success_title)" "$success_msg" 600 500
-
-    # Ask about systemd service
-    if [ "$OS_TYPE" = "linux" ]; then
-        if gui_question "$(get_text create_service_title)" "$(get_text create_service_text)"; then
-            create_systemd_service
-        fi
-    fi
-
-    # Ask about DBeaver
-    if gui_question "$(get_text install_dbeaver_title)" "Would you like to install DBeaver database manager?"; then
-        install_dbeaver
-    fi
-
-    log "Fresh installation completed successfully"# ✅ ادامه کد `oracle-apex-gui-installer.sh` (نسخه 4.3.0 اصلاح شده)
-
-```bash
-    echo "  ⚠️ APEX may need more time. Wait 2 minutes and try again."
-    echo "     Or run: bash \$PROJECT_DIR/scripts/fix.sh"
-fi
-echo ""
-STARTEOF
-    chmod +x "$SCRIPTS_DIR/start.sh"
-
-    #---------------------------------------------------------------------------
-    # FIX SCRIPT - COMPREHENSIVE FOR 571/574/500
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/fix.sh" << FIXEOF
-#!/bin/bash
-PROJECT_DIR="${PROJECT_DIR}"
-ORDS_CONFIG_DIR="${ORDS_CONFIG_DIR}"
-IMAGES_DIR="${IMAGES_DIR}"
-LOG_DIR="${LOG_DIR}"
-DB_PORT="${DB_PORT}"
-DB_SERVICE="${DB_SERVICE}"
-ORDS_PORT="${ORDS_PORT}"
-
-PASS=\$(cat "\$PROJECT_DIR/.db_password" 2>/dev/null)
-
-if [ -z "\$PASS" ]; then
-    echo "❌ Password file not found!"
-    exit 1
-fi
-
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  FIX SCRIPT v4.3 - Fixing All Issues"
-echo "  Errors: 574, 571, 500, Images"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
-
-echo "[1/12] Stopping ORDS..."
-pkill -9 -f ords 2>/dev/null || true
-pkill -9 -f java.*ords 2>/dev/null || true
-sleep 5
-
-echo "[2/12] Starting database..."
-docker start oracle-apex-db 2>/dev/null || true
-echo "      Waiting 2 minutes for database..."
-sleep 120
-
-echo "[3/12] Resetting database password..."
-docker exec oracle-apex-db resetPassword "\$PASS" 2>/dev/null || true
-sleep 20
-
-echo "[4/12] Disabling password policies..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << 'SQL'
-ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
-COMMIT;
-EXIT;
-SQL" 2>/dev/null || true
-
-echo "[5/12] Recreating ORDS_PUBLIC_USER..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQL
-BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY \${PASS} DEFAULT TABLESPACE SYSAUX QUOTA UNLIMITED ON SYSAUX;
-GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
-GRANT CREATE SESSION, ALTER SESSION TO ORDS_PUBLIC_USER;
-GRANT CREATE PROCEDURE, CREATE SEQUENCE, CREATE TABLE, CREATE TRIGGER, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO ORDS_PUBLIC_USER;
-GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
-ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
-COMMIT;
-EXIT;
-SQL" 2>/dev/null || true
-
-echo "[6/12] Fixing APEX users..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQL
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY \${PASS} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-COMMIT;
-EXIT;
-SQL" 2>/dev/null || true
-
-echo "[7/12] Granting proxy permissions..."
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << 'SQL'
-ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER;
-GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER;
-COMMIT;
-EXIT;
-SQL" 2>/dev/null || true
-
-echo "[8/12] Reinstalling ORDS connection..."
-ORDS_BIN=\$(find "\$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
-if [ -n "\$ORDS_BIN" ]; then
-    chmod +x "\$ORDS_BIN" 2>/dev/null || true
-    
-    rm -rf "\$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
-    mkdir -p "\$ORDS_CONFIG_DIR/databases/default"
-    
-    printf "%s\n%s\n%s\n" "\$PASS" "\$PASS" "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" install \\
-        --admin-user SYS \\
-        --db-hostname localhost \\
-        --db-port \$DB_PORT \\
-        --db-servicename \$DB_SERVICE \\
-        --feature-sdw true \\
-        --gateway-mode proxied \\
-        --gateway-user ORDS_PUBLIC_USER \\
         --password-stdin 2>/dev/null || true
-    
     echo "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config secret --password-stdin db.password 2>/dev/null || true
 fi
 
@@ -2546,7 +829,6 @@ if [ -d "\$PROJECT_DIR/apex/images" ]; then
     cp -r "\$PROJECT_DIR/apex/images" "\$IMAGES_DIR"
     chmod -R 755 "\$IMAGES_DIR"
 fi
-
 if [ -n "\$ORDS_BIN" ]; then
     "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config set standalone.static.path "\$IMAGES_DIR" 2>/dev/null || true
     "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config set standalone.static.context.path /i 2>/dev/null || true
@@ -2556,8 +838,7 @@ fi
 echo "[10/12] Setting IMAGE_PREFIX in database..."
 APEX_SCHEMA=\$(cat "\$PROJECT_DIR/.apex_schema" 2>/dev/null)
 [ -z "\$APEX_SCHEMA" ] && APEX_SCHEMA="APEX_240100"
-
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQLEOF
+docker exec ${CONTAINER_NAME} bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQLEOF
 BEGIN
     \${APEX_SCHEMA}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
     \${APEX_SCHEMA}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
@@ -2572,10 +853,7 @@ echo "[11/12] Starting ORDS with images..."
 if [ -n "\$ORDS_BIN" ]; then
     export ORDS_CONFIG="\$ORDS_CONFIG_DIR"
     export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-    nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve \\
-        --port \$ORDS_PORT \\
-        --apex-images "\$IMAGES_DIR" \\
-        > "\$LOG_DIR/ords.log" 2>&1 &
+    nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve --port \$ORDS_PORT --apex-images "\$IMAGES_DIR" > "\$LOG_DIR/ords.log" 2>&1 &
     echo "      ORDS started with PID \$!"
 fi
 
@@ -2589,12 +867,10 @@ echo "════════════════════════�
 HTTP_ADMIN=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\$ORDS_PORT/ords/apex_admin 2>/dev/null || echo "000")
 HTTP_LOGIN=\$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:\$ORDS_PORT/ords/f?p=4550" 2>/dev/null || echo "000")
 HTTP_IMG=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:\$ORDS_PORT/i/apex_version.txt 2>/dev/null || echo "000")
-
 echo "  APEX Admin:  HTTP \$HTTP_ADMIN"
 echo "  APEX Login:  HTTP \$HTTP_LOGIN"
 echo "  Images:      HTTP \$HTTP_IMG"
 echo ""
-
 if [[ "\$HTTP_ADMIN" =~ ^(200|302|303)\$ ]] && [[ "\$HTTP_IMG" =~ ^(200|304)\$ ]]; then
     echo "  ✅ SUCCESS! APEX is working with images!"
     echo ""
@@ -2612,9 +888,6 @@ echo "════════════════════════�
 FIXEOF
     chmod +x "$SCRIPTS_DIR/fix.sh"
 
-    #---------------------------------------------------------------------------
-    # LOGS SCRIPT
-    #---------------------------------------------------------------------------
     cat > "$SCRIPTS_DIR/logs.sh" << LOGSEOF
 #!/bin/bash
 PROJECT_DIR="${PROJECT_DIR}"
@@ -2625,9 +898,6 @@ tail -f "\$PROJECT_DIR/logs/ords.log" 2>/dev/null || echo "Log file not found"
 LOGSEOF
     chmod +x "$SCRIPTS_DIR/logs.sh"
 
-    #---------------------------------------------------------------------------
-    # RESET APEX PASSWORD SCRIPT
-    #---------------------------------------------------------------------------
     cat > "$SCRIPTS_DIR/reset-apex-password.sh" << RESETEOF
 #!/bin/bash
 PROJECT_DIR="${PROJECT_DIR}"
@@ -2651,7 +921,7 @@ if [[ ! "\$NEW_PASS" =~ ^[a-zA-Z][a-zA-Z0-9]{5,}\$ ]]; then
     exit 1
 fi
 
-docker exec oracle-apex-db bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQLEOF
+docker exec ${CONTAINER_NAME} bash -c "sqlplus -s sys/\${PASS}@//localhost:\${DB_PORT}/\${DB_SERVICE} as sysdba << SQLEOF
 BEGIN
     \${APEX_SCHEMA}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
     \${APEX_SCHEMA}.APEX_UTIL.EDIT_USER(
@@ -2673,15 +943,11 @@ chmod 600 "\$PROJECT_DIR/.apex_password"
 echo "✅ APEX Admin password reset successfully!"
 RESETEOF
     chmod +x "$SCRIPTS_DIR/reset-apex-password.sh"
-
-    #---------------------------------------------------------------------------
-    # GUI LAUNCHER
-    #---------------------------------------------------------------------------
-    cat > "$SCRIPTS_DIR/launch-gui.sh" << GUIEOF
+    cat > "$SCRIPTS_DIR/launch-gui.sh" << 'GUIEOF'
 #!/bin/bash
-PROJECT_DIR="${PROJECT_DIR}"
-SCRIPTS_DIR="${SCRIPTS_DIR}"
-ORDS_PORT="${ORDS_PORT}"
+PROJECT_DIR="$HOME/oracle-apex-complete"
+SCRIPTS_DIR="$PROJECT_DIR/scripts"
+ORDS_PORT="8080"
 
 GUI=""
 if command -v yad >/dev/null 2>&1; then
@@ -2696,139 +962,136 @@ fi
 show_menu() {
     local db_status="🔴 Stopped"
     local ords_status="🔴 Stopped"
-    
+
     if docker inspect -f '{{.State.Running}}' oracle-apex-db 2>/dev/null | grep -q "true"; then
         db_status="🟢 Running"
     fi
-    
+
     if pgrep -f "ords.*serve" >/dev/null 2>&1; then
         ords_status="🟢 Running"
     fi
-    
-    local status_text="Database: \$db_status | ORDS: \$ords_status"
-    
-    if [ "\$GUI" = "yad" ]; then
-        yad --list --title="Oracle APEX Manager - KaizenixCore v4.3" \\
-            --text="\$status_text\n\nSelect an action:" \\
-            --radiolist --column="" --column="ID" --column="Action" \\
-            TRUE "start" "▶️  Start Services" \\
-            FALSE "stop" "⏹️  Stop Services" \\
-            FALSE "restart" "🔄  Restart Services" \\
-            FALSE "fix" "🔧  Fix Problems (571/574/500)" \\
-            FALSE "status" "📊  Check Status" \\
-            FALSE "logs" "📜  View Logs" \\
-            FALSE "open_admin" "🌐  Open Admin Panel" \\
-            FALSE "open_login" "🔐  Open Login Page" \\
-            FALSE "reset_pass" "🔑  Reset APEX Password" \\
-            FALSE "exit" "❌  Exit" \\
-            --width=500 --height=550 --center \\
-            --button="Cancel:1" --button="OK:0" \\
-            --print-column=2 --hide-column=2 \\
+
+    local status_text="Database: $db_status | ORDS: $ords_status"
+
+    if [ "$GUI" = "yad" ]; then
+        yad --list --title="Oracle APEX Manager - KaizenixCore v4.3" \
+            --text="$status_text\n\nSelect an action:" \
+            --radiolist --column="" --column="ID" --column="Action" \
+            TRUE "start" "▶️  Start Services" \
+            FALSE "stop" "⏹️  Stop Services" \
+            FALSE "restart" "🔄  Restart Services" \
+            FALSE "fix" "🔧  Fix Problems (571/574/500)" \
+            FALSE "status" "📊  Check Status" \
+            FALSE "logs" "📜  View Logs" \
+            FALSE "open_admin" "🌐  Open Admin Panel" \
+            FALSE "open_login" "🔐  Open Login Page" \
+            FALSE "reset_pass" "🔑  Reset APEX Password" \
+            FALSE "exit" "❌  Exit" \
+            --width=500 --height=550 --center \
+            --button="Cancel:1" --button="OK:0" \
+            --print-column=2 --hide-column=2 \
             --borders=15 2>/dev/null
     else
-        zenity --list --title="Oracle APEX Manager - KaizenixCore v4.3" \\
-            --text="\$status_text\n\nSelect an action:" \\
-            --radiolist --column="" --column="ID" --column="Action" \\
-            TRUE "start" "▶️  Start Services" \\
-            FALSE "stop" "⏹️  Stop Services" \\
-            FALSE "restart" "🔄  Restart Services" \\
-            FALSE "fix" "🔧  Fix Problems (571/574/500)" \\
-            FALSE "status" "📊  Check Status" \\
-            FALSE "logs" "📜  View Logs" \\
-            FALSE "open_admin" "🌐  Open Admin Panel" \\
-            FALSE "open_login" "🔐  Open Login Page" \\
-            FALSE "reset_pass" "🔑  Reset APEX Password" \\
-            FALSE "exit" "❌  Exit" \\
-            --width=500 --height=550 \\
-            --ok-label="OK" --cancel-label="Cancel" \\
+        zenity --list --title="Oracle APEX Manager - KaizenixCore v4.3" \
+            --text="$status_text\n\nSelect an action:" \
+            --radiolist --column="" --column="ID" --column="Action" \
+            TRUE "start" "▶️  Start Services" \
+            FALSE "stop" "⏹️  Stop Services" \
+            FALSE "restart" "🔄  Restart Services" \
+            FALSE "fix" "🔧  Fix Problems (571/574/500)" \
+            FALSE "status" "📊  Check Status" \
+            FALSE "logs" "📜  View Logs" \
+            FALSE "open_admin" "🌐  Open Admin Panel" \
+            FALSE "open_login" "🔐  Open Login Page" \
+            FALSE "reset_pass" "🔑  Reset APEX Password" \
+            FALSE "exit" "❌  Exit" \
+            --width=500 --height=550 \
+            --ok-label="OK" --cancel-label="Cancel" \
             --hide-column=2 2>/dev/null
     fi
 }
 
 run_in_terminal() {
-    local cmd="\$1"
-    local title="\$2"
-    
+    local cmd="$1"
+    local title="$2"
+
     if command -v gnome-terminal >/dev/null 2>&1; then
-        gnome-terminal -- bash -c "\$cmd; echo; echo 'Press Enter to close...'; read"
+        gnome-terminal -- bash -c "$cmd; echo; echo 'Press Enter to close...'; read"
     elif command -v konsole >/dev/null 2>&1; then
-        konsole -e bash -c "\$cmd; echo; echo 'Press Enter to close...'; read" &
+        konsole -e bash -c "$cmd; echo; echo 'Press Enter to close...'; read" &
     elif command -v xfce4-terminal >/dev/null 2>&1; then
-        xfce4-terminal -e "bash -c '\$cmd; echo; echo Press Enter to close...; read'" &
+        xfce4-terminal -e "bash -c '$cmd; echo; echo Press Enter to close...; read'" &
     elif command -v xterm >/dev/null 2>&1; then
-        xterm -title "\$title" -e "bash -c '\$cmd; echo; echo Press Enter to close...; read'" &
+        xterm -title "$title" -e "bash -c '$cmd; echo; echo Press Enter to close...; read'" &
     else
-        local output=\$(\$cmd 2>&1)
-        if [ "\$GUI" = "yad" ]; then
-            echo "\$output" | yad --text-info --title="\$title" --width=700 --height=500 --center 2>/dev/null
+        local output=$($cmd 2>&1)
+        if [ "$GUI" = "yad" ]; then
+            echo "$output" | yad --text-info --title="$title" --width=700 --height=500 --center 2>/dev/null
         else
-            echo "\$output" | zenity --text-info --title="\$title" --width=700 --height=500 2>/dev/null
+            echo "$output" | zenity --text-info --title="$title" --width=700 --height=500 2>/dev/null
         fi
     fi
 }
 
 while true; do
-    choice=\$(show_menu)
-    choice=\$(echo "\$choice" | tr -d '|' | tr -d ' ')
-    
-    [ -z "\$choice" ] && exit 0
-    
-    case "\$choice" in
+    choice=$(show_menu)
+    choice=$(echo "$choice" | tr -d '|' | tr -d ' ')
+
+    [ -z "$choice" ] && exit 0
+
+    case "$choice" in
         start)
-            run_in_terminal "bash '\$SCRIPTS_DIR/start.sh'" "Starting Oracle APEX"
+            run_in_terminal "bash '$SCRIPTS_DIR/start.sh'" "Starting Oracle APEX"
             ;;
         stop)
-            bash "\$SCRIPTS_DIR/stop.sh"
-            if [ "\$GUI" = "yad" ]; then
+            bash "$SCRIPTS_DIR/stop.sh"
+            if [ "$GUI" = "yad" ]; then
                 yad --info --title="Oracle APEX" --text="Services stopped." --width=300 --center --timeout=3 2>/dev/null
             else
                 zenity --info --title="Oracle APEX" --text="Services stopped." --width=300 --timeout=3 2>/dev/null
             fi
             ;;
         restart)
-            bash "\$SCRIPTS_DIR/stop.sh"
+            bash "$SCRIPTS_DIR/stop.sh"
             sleep 3
-            run_in_terminal "bash '\$SCRIPTS_DIR/start.sh'" "Restarting Oracle APEX"
+            run_in_terminal "bash '$SCRIPTS_DIR/start.sh'" "Restarting Oracle APEX"
             ;;
         fix)
-            run_in_terminal "bash '\$SCRIPTS_DIR/fix.sh'" "Fixing Oracle APEX"
+            run_in_terminal "bash '$SCRIPTS_DIR/fix.sh'" "Fixing Oracle APEX"
             ;;
         status)
-            run_in_terminal "bash '\$SCRIPTS_DIR/status.sh'" "Oracle APEX Status"
+            run_in_terminal "bash '$SCRIPTS_DIR/status.sh'" "Oracle APEX Status"
             ;;
         logs)
-            if [ "\$GUI" = "yad" ]; then
-                tail -200 "\$PROJECT_DIR/logs/ords.log" 2>/dev/null | yad --text-info \\
-                    --title="ORDS Logs" --width=900 --height=600 --center \\
+            if [ "$GUI" = "yad" ]; then
+                tail -200 "$PROJECT_DIR/logs/ords.log" 2>/dev/null | yad --text-info \
+                    --title="ORDS Logs" --width=900 --height=600 --center \
                     --fontname="monospace 10" 2>/dev/null
             else
-                tail -200 "\$PROJECT_DIR/logs/ords.log" 2>/dev/null | zenity --text-info \\
-                    --title="ORDS Logs" --width=900 --height=600 \\
+                tail -200 "$PROJECT_DIR/logs/ords.log" 2>/dev/null | zenity --text-info \
+                    --title="ORDS Logs" --width=900 --height=600 \
                     --font="monospace" 2>/dev/null
             fi
             ;;
         open_admin)
-            xdg-open "http://localhost:\$ORDS_PORT/ords/apex_admin" 2>/dev/null &
+            xdg-open "http://localhost:$ORDS_PORT/ords/apex_admin" 2>/dev/null &
             ;;
         open_login)
-            xdg-open "http://localhost:\$ORDS_PORT/ords/f?p=4550" 2>/dev/null &
+            xdg-open "http://localhost:$ORDS_PORT/ords/f?p=4550" 2>/dev/null &
             ;;
         reset_pass)
-            run_in_terminal "bash '\$SCRIPTS_DIR/reset-apex-password.sh'" "Reset APEX Password"
+            run_in_terminal "bash '$SCRIPTS_DIR/reset-apex-password.sh'" "Reset APEX Password"
             ;;
         exit)
             exit 0
             ;;
     esac
-    
+
     sleep 0.5
 done
 GUIEOF
     chmod +x "$SCRIPTS_DIR/launch-gui.sh"
 
-    #---------------------------------------------------------------------------
-    # OPEN DBEAVER SCRIPT
-    #---------------------------------------------------------------------------
     cat > "$SCRIPTS_DIR/open-dbeaver.sh" << 'DBEAVEREOF'
 #!/bin/bash
 echo "Opening DBeaver..."
@@ -2856,13 +1119,9 @@ fi
 DBEAVEREOF
     chmod +x "$SCRIPTS_DIR/open-dbeaver.sh"
 
-    #---------------------------------------------------------------------------
-    # DESKTOP FILE
-    #---------------------------------------------------------------------------
     safe_mkdir "$HOME/.local/share/applications"
     safe_mkdir "$HOME/.local/share/icons"
-    
-    # Create SVG icon
+
     cat > "$PROJECT_DIR/oracle-apex-icon.svg" << 'SVGEOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
@@ -2880,7 +1139,7 @@ DBEAVEREOF
 SVGEOF
 
     cp "$PROJECT_DIR/oracle-apex-icon.svg" "$HOME/.local/share/icons/" 2>/dev/null || true
-    
+
     cat > "$HOME/.local/share/applications/oracle-apex.desktop" << DESKTOPEOF
 [Desktop Entry]
 Version=1.0
@@ -2896,30 +1155,26 @@ Keywords=oracle;apex;ords;database;
 StartupNotify=true
 DESKTOPEOF
     chmod +x "$HOME/.local/share/applications/oracle-apex.desktop"
-    
+
     update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
-    
+
     log "Management scripts created"
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# CREATE SYSTEMD SERVICE
-#═══════════════════════════════════════════════════════════════════════════════
 create_systemd_service() {
     if [ "$OS_TYPE" != "linux" ]; then
         log "Systemd service only available on Linux"
         return 0
     fi
-    
+
     local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
     if [ -z "$ORDS_BIN" ]; then
         log "ORDS binary not found, cannot create service"
         return 1
     fi
-    
+
     log "Creating systemd services..."
-    
-    # Create combined service script
+
     cat > "$SCRIPTS_DIR/oracle-apex-service.sh" << SERVICEEOF
 #!/bin/bash
 PROJECT_DIR="${PROJECT_DIR}"
@@ -2936,20 +1191,20 @@ case "\$1" in
         echo "Starting Oracle APEX services..."
         docker start ${CONTAINER_NAME} 2>/dev/null
         sleep 120
-        
+
         PASS=\$(cat "\$PROJECT_DIR/.db_password" 2>/dev/null)
         if [ -n "\$PASS" ]; then
             echo "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config secret --password-stdin db.password 2>/dev/null || true
         fi
-        
+
         export ORDS_CONFIG="\$ORDS_CONFIG_DIR"
         export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
-        nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve \\
-            --port \$ORDS_PORT \\
-            --apex-images "\$IMAGES_DIR" \\
+        nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve \
+            --port \$ORDS_PORT \
+            --apex-images "\$IMAGES_DIR" \
             > "\$LOG_DIR/ords.log" 2>&1 &
         echo \$! > "\$PROJECT_DIR/ords.pid"
-        
+
         echo "Oracle APEX started"
         ;;
     stop)
@@ -2973,7 +1228,7 @@ case "\$1" in
         else
             echo "Database: Stopped"
         fi
-        
+
         if pgrep -f "ords.*serve" >/dev/null 2>&1; then
             echo "ORDS: Running"
         else
@@ -2987,8 +1242,7 @@ case "\$1" in
 esac
 SERVICEEOF
     chmod +x "$SCRIPTS_DIR/oracle-apex-service.sh"
-    
-    # Create systemd service file
+
     run_sudo tee /etc/systemd/system/oracle-apex.service > /dev/null << SYSTEMDEOF
 [Unit]
 Description=Oracle APEX and ORDS Service - KaizenixCore v${VERSION}
@@ -3016,39 +1270,33 @@ SYSTEMDEOF
 
     run_sudo systemctl daemon-reload
     run_sudo systemctl enable oracle-apex.service
-    
+
     log "Systemd service created and enabled"
-    
+
     gui_info "$(get_text info)" "$(get_text service_created)"
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# REPAIR INSTALLATION - COMPREHENSIVE FIX FOR 571
-#═══════════════════════════════════════════════════════════════════════════════
 repair_installation() {
-    log_step "REPAIR INSTALLATION - COMPREHENSIVE FIX FOR ERROR 571"
-    
+    log "REPAIR INSTALLATION - COMPREHENSIVE FIX FOR ERROR 571"
+
     if [ -z "$ORACLE_PASSWORD" ] || [ -z "$APEX_ADMIN_PASSWORD" ]; then
-        log_error "Passwords not set!"
+        log "Passwords not set!"
         gui_error "$(get_text error)" "Passwords not configured."
         return 1
     fi
-    
+
     start_progress
-    
-    # Step 1: Stop ORDS
+
     update_progress 5 "Stopping ORDS..."
     pkill -9 -f "ords.*serve" 2>/dev/null || true
     pkill -9 -f "java.*ords" 2>/dev/null || true
     sleep 5
-    
-    # Step 2: Start database
+
     update_progress 10 "Starting database..."
     docker start "$CONTAINER_NAME" 2>/dev/null || true
     sleep 10
-    
-    # Step 3: Wait for database
-    update_progress 15 "Waiting for database (this may take a few minutes)..."
+
+    update_progress 15 "Waiting for database..."
     local db_ready=false
     for i in {1..120}; do
         if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "DATABASE IS READY"; then
@@ -3058,21 +1306,18 @@ repair_installation() {
         sleep 5
     done
     sleep 30
-    
-    # Step 4: Reset password
+
     update_progress 25 "$(get_text resetting_password)"
     docker exec "$CONTAINER_NAME" resetPassword "$ORACLE_PASSWORD" >> "$INSTALL_LOG" 2>&1 || true
     sleep 20
-    
-    # Step 5: Disable password policies
+
     update_progress 30 "Disabling password policies..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
 ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
 COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 6: Fix ORDS_PUBLIC_USER
+
     update_progress 40 "Fixing ORDS_PUBLIC_USER..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
 BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
@@ -3092,8 +1337,7 @@ ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
 COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 7: Fix APEX users
+
     update_progress 50 "Fixing APEX users..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
 BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
@@ -3108,18 +1352,16 @@ ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 8: Reset APEX admin password
+
     update_progress 55 "Resetting APEX admin password..."
     local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
     [ -z "$apex_schema" ] && apex_schema="APEX_240100"
-    
+
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
 BEGIN
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
     ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
-    
     BEGIN
         ${apex_schema}.APEX_UTIL.EDIT_USER(
             p_user_id                      => ${apex_schema}.APEX_UTIL.GET_USER_ID('ADMIN'),
@@ -3136,15 +1378,14 @@ END;
 /
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
-    
-    # Step 9: Reinstall ORDS connection
+
     update_progress 65 "Reinstalling ORDS connection..."
     local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
-    
+
     if [ -n "$ORDS_BIN" ] && [ -x "$ORDS_BIN" ]; then
         rm -rf "$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
         mkdir -p "$ORDS_CONFIG_DIR/databases/default"
-        
+
         local PASS_FILE=$(mktemp)
         printf "%s\n%s\n%s\n" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" > "$PASS_FILE"
 
@@ -3160,21 +1401,18 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
             --password-stdin < "$PASS_FILE" >> "$INSTALL_LOG" 2>&1 || true
 
         rm -f "$PASS_FILE"
-        
+
         echo "$ORACLE_PASSWORD" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config secret --password-stdin db.password >> "$INSTALL_LOG" 2>&1 || true
     fi
-    
-    # Step 10: Fix images
+
     update_progress 75 "$(get_text fixing_images)"
     fix_apex_images
-    
-    # Step 11: Save passwords
+
     update_progress 80 "Saving configuration..."
     echo "$ORACLE_PASSWORD" > "$PROJECT_DIR/.db_password"
     echo "$APEX_ADMIN_PASSWORD" > "$PROJECT_DIR/.apex_password"
     chmod 600 "$PROJECT_DIR/.db_password" "$PROJECT_DIR/.apex_password"
-    
-    # Step 12: Start ORDS
+
     update_progress 85 "Starting ORDS..."
     pkill -9 -f "ords.*serve" 2>/dev/null || true
     sleep 5
@@ -3183,48 +1421,555 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
     if [ -n "$ORDS_BIN" ] && [ -x "$ORDS_BIN" ]; then
         export ORDS_CONFIG="$ORDS_CONFIG_DIR"
-        export _JAVA_OPTIONS="-Xms512m -Xmx1024m -Dfile.encoding=UTF-8"
-        
+        export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
+
         nohup "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
             --port "$ORDS_PORT" \
             --apex-images "$IMAGES_DIR" \
             > "$LOG_DIR/ords.log" 2>&1 &
-        
+
         local ords_pid=$!
         echo "$ords_pid" > "$PROJECT_DIR/ords.pid"
         log "ORDS started with PID $ords_pid"
     fi
 
-    update_progress 95 "Waiting for ORDS to initialize (2 minutes)..."
+    update_progress 95 "Waiting for ORDS..."
     sleep 120
 
     update_progress 100 "$(get_text verifying)"
-    
+
     local http_admin=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/ords/apex_admin" 2>/dev/null || echo "000")
     log "Verification - Admin: HTTP $http_admin"
-    
+
     stop_progress
-    
+
     if [[ "$http_admin" =~ ^(200|302|303)$ ]]; then
-        log_success "REPAIR SUCCESSFUL!"
+        log "REPAIR SUCCESSFUL!"
         gui_info "$(get_text success_title)" \
             "✅ Repair Completed Successfully!\n\n🌐 Admin Panel:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\n🔐 Login Page:\nhttp://localhost:${ORDS_PORT}/ords/f?p=4550\n\n📋 Credentials:\nUsername: ADMIN\nPassword: (your password)" 600 400
         return 0
     else
-        log_warning "Repair completed but APEX may need more time"
+        log "Repair completed but APEX may need more time"
         gui_warning "$(get_text warning)" \
             "⚠️ Repair completed but APEX is still initializing.\n\nPlease wait 2-3 minutes and try:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\nIf still having issues, run:\nbash ~/oracle-apex-complete/scripts/fix.sh" 600 400
         return 0
     fi
 }
+cat > "$SCRIPTS_DIR/launch-gui.sh" << 'GUIEOF'
+#!/bin/bash
+PROJECT_DIR="$HOME/oracle-apex-complete"
+SCRIPTS_DIR="$PROJECT_DIR/scripts"
+ORDS_PORT="8080"
 
-#═══════════════════════════════════════════════════════════════════════════════
-# MAIN INSTALLATION FUNCTION
-#═══════════════════════════════════════════════════════════════════════════════
+GUI=""
+if command -v yad >/dev/null 2>&1; then
+    GUI="yad"
+elif command -v zenity >/dev/null 2>&1; then
+    GUI="zenity"
+else
+    echo "No GUI tool found. Please install yad or zenity."
+    exit 1
+fi
+
+show_menu() {
+    local db_status="🔴 Stopped"
+    local ords_status="🔴 Stopped"
+
+    if docker inspect -f '{{.State.Running}}' oracle-apex-db 2>/dev/null | grep -q "true"; then
+        db_status="🟢 Running"
+    fi
+
+    if pgrep -f "ords.*serve" >/dev/null 2>&1; then
+        ords_status="🟢 Running"
+    fi
+
+    local status_text="Database: $db_status | ORDS: $ords_status"
+
+    if [ "$GUI" = "yad" ]; then
+        yad --list --title="Oracle APEX Manager - KaizenixCore v4.3" \
+            --text="$status_text\n\nSelect an action:" \
+            --radiolist --column="" --column="ID" --column="Action" \
+            TRUE "start" "▶️  Start Services" \
+            FALSE "stop" "⏹️  Stop Services" \
+            FALSE "restart" "🔄  Restart Services" \
+            FALSE "fix" "🔧  Fix Problems (571/574/500)" \
+            FALSE "status" "📊  Check Status" \
+            FALSE "logs" "📜  View Logs" \
+            FALSE "open_admin" "🌐  Open Admin Panel" \
+            FALSE "open_login" "🔐  Open Login Page" \
+            FALSE "reset_pass" "🔑  Reset APEX Password" \
+            FALSE "exit" "❌  Exit" \
+            --width=500 --height=550 --center \
+            --button="Cancel:1" --button="OK:0" \
+            --print-column=2 --hide-column=2 \
+            --borders=15 2>/dev/null
+    else
+        zenity --list --title="Oracle APEX Manager - KaizenixCore v4.3" \
+            --text="$status_text\n\nSelect an action:" \
+            --radiolist --column="" --column="ID" --column="Action" \
+            TRUE "start" "▶️  Start Services" \
+            FALSE "stop" "⏹️  Stop Services" \
+            FALSE "restart" "🔄  Restart Services" \
+            FALSE "fix" "🔧  Fix Problems (571/574/500)" \
+            FALSE "status" "📊  Check Status" \
+            FALSE "logs" "📜  View Logs" \
+            FALSE "open_admin" "🌐  Open Admin Panel" \
+            FALSE "open_login" "🔐  Open Login Page" \
+            FALSE "reset_pass" "🔑  Reset APEX Password" \
+            FALSE "exit" "❌  Exit" \
+            --width=500 --height=550 \
+            --ok-label="OK" --cancel-label="Cancel" \
+            --hide-column=2 2>/dev/null
+    fi
+}
+
+run_in_terminal() {
+    local cmd="$1"
+    local title="$2"
+
+    if command -v gnome-terminal >/dev/null 2>&1; then
+        gnome-terminal -- bash -c "$cmd; echo; echo 'Press Enter to close...'; read"
+    elif command -v konsole >/dev/null 2>&1; then
+        konsole -e bash -c "$cmd; echo; echo 'Press Enter to close...'; read" &
+    elif command -v xfce4-terminal >/dev/null 2>&1; then
+        xfce4-terminal -e "bash -c '$cmd; echo; echo Press Enter to close...; read'" &
+    elif command -v xterm >/dev/null 2>&1; then
+        xterm -title "$title" -e "bash -c '$cmd; echo; echo Press Enter to close...; read'" &
+    else
+        local output=$($cmd 2>&1)
+        if [ "$GUI" = "yad" ]; then
+            echo "$output" | yad --text-info --title="$title" --width=700 --height=500 --center 2>/dev/null
+        else
+            echo "$output" | zenity --text-info --title="$title" --width=700 --height=500 2>/dev/null
+        fi
+    fi
+}
+
+while true; do
+    choice=$(show_menu)
+    choice=$(echo "$choice" | tr -d '|' | tr -d ' ')
+
+    [ -z "$choice" ] && exit 0
+
+    case "$choice" in
+        start)
+            run_in_terminal "bash '$SCRIPTS_DIR/start.sh'" "Starting Oracle APEX"
+            ;;
+        stop)
+            bash "$SCRIPTS_DIR/stop.sh"
+            if [ "$GUI" = "yad" ]; then
+                yad --info --title="Oracle APEX" --text="Services stopped." --width=300 --center --timeout=3 2>/dev/null
+            else
+                zenity --info --title="Oracle APEX" --text="Services stopped." --width=300 --timeout=3 2>/dev/null
+            fi
+            ;;
+        restart)
+            bash "$SCRIPTS_DIR/stop.sh"
+            sleep 3
+            run_in_terminal "bash '$SCRIPTS_DIR/start.sh'" "Restarting Oracle APEX"
+            ;;
+        fix)
+            run_in_terminal "bash '$SCRIPTS_DIR/fix.sh'" "Fixing Oracle APEX"
+            ;;
+        status)
+            run_in_terminal "bash '$SCRIPTS_DIR/status.sh'" "Oracle APEX Status"
+            ;;
+        logs)
+            if [ "$GUI" = "yad" ]; then
+                tail -200 "$PROJECT_DIR/logs/ords.log" 2>/dev/null | yad --text-info \
+                    --title="ORDS Logs" --width=900 --height=600 --center \
+                    --fontname="monospace 10" 2>/dev/null
+            else
+                tail -200 "$PROJECT_DIR/logs/ords.log" 2>/dev/null | zenity --text-info \
+                    --title="ORDS Logs" --width=900 --height=600 \
+                    --font="monospace" 2>/dev/null
+            fi
+            ;;
+        open_admin)
+            xdg-open "http://localhost:$ORDS_PORT/ords/apex_admin" 2>/dev/null &
+            ;;
+        open_login)
+            xdg-open "http://localhost:$ORDS_PORT/ords/f?p=4550" 2>/dev/null &
+            ;;
+        reset_pass)
+            run_in_terminal "bash '$SCRIPTS_DIR/reset-apex-password.sh'" "Reset APEX Password"
+            ;;
+        exit)
+            exit 0
+            ;;
+    esac
+
+    sleep 0.5
+done
+GUIEOF
+    chmod +x "$SCRIPTS_DIR/launch-gui.sh"
+
+    cat > "$SCRIPTS_DIR/open-dbeaver.sh" << 'DBEAVEREOF'
+#!/bin/bash
+echo "Opening DBeaver..."
+echo ""
+echo "Connection details for Oracle APEX database:"
+echo "  Host:     localhost"
+echo "  Port:     1521"
+echo "  Database: XEPDB1"
+echo "  Username: SYS (as SYSDBA)"
+echo "  Password: (your database password)"
+echo ""
+
+if command -v dbeaver-ce &> /dev/null; then
+    dbeaver-ce &
+elif command -v dbeaver &> /dev/null; then
+    dbeaver &
+elif command -v flatpak &> /dev/null && flatpak list | grep -q dbeaver; then
+    flatpak run io.dbeaver.DBeaverCommunity &
+elif command -v snap &> /dev/null && snap list | grep -q dbeaver; then
+    snap run dbeaver-ce &
+else
+    echo "DBeaver not found. Please install it first."
+    exit 1
+fi
+DBEAVEREOF
+    chmod +x "$SCRIPTS_DIR/open-dbeaver.sh"
+
+    safe_mkdir "$HOME/.local/share/applications"
+    safe_mkdir "$HOME/.local/share/icons"
+
+    cat > "$PROJECT_DIR/oracle-apex-icon.svg" << 'SVGEOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF4444;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#CC0000;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  <rect x="20" y="20" width="216" height="216" rx="40" fill="url(#grad1)"/>
+  <text x="128" y="105" font-family="Arial Black, sans-serif" font-size="52" font-weight="bold" fill="white" text-anchor="middle">APEX</text>
+  <text x="128" y="155" font-family="Arial, sans-serif" font-size="28" font-weight="600" fill="rgba(255,255,255,0.95)" text-anchor="middle">Manager</text>
+  <text x="128" y="195" font-family="Arial, sans-serif" font-size="18" fill="rgba(255,255,255,0.75)" text-anchor="middle">KaizenixCore</text>
+</svg>
+SVGEOF
+
+    cp "$PROJECT_DIR/oracle-apex-icon.svg" "$HOME/.local/share/icons/" 2>/dev/null || true
+
+    cat > "$HOME/.local/share/applications/oracle-apex.desktop" << DESKTOPEOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Oracle APEX Manager
+GenericName=Database Development Tool
+Comment=Manage Oracle APEX and ORDS - KaizenixCore v${VERSION}
+Exec=bash ${SCRIPTS_DIR}/launch-gui.sh
+Icon=${HOME}/.local/share/icons/oracle-apex-icon.svg
+Terminal=false
+Categories=Development;Database;IDE;
+Keywords=oracle;apex;ords;database;
+StartupNotify=true
+DESKTOPEOF
+    chmod +x "$HOME/.local/share/applications/oracle-apex.desktop"
+
+    update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
+
+    log "Management scripts created"
+}
+
+create_systemd_service() {
+    if [ "$OS_TYPE" != "linux" ]; then
+        log "Systemd service only available on Linux"
+        return 0
+    fi
+
+    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+    if [ -z "$ORDS_BIN" ]; then
+        log "ORDS binary not found, cannot create service"
+        return 1
+    fi
+
+    log "Creating systemd services..."
+
+    cat > "$SCRIPTS_DIR/oracle-apex-service.sh" << SERVICEEOF
+#!/bin/bash
+PROJECT_DIR="${PROJECT_DIR}"
+ORDS_CONFIG_DIR="${ORDS_CONFIG_DIR}"
+ORDS_BIN="${ORDS_BIN}"
+IMAGES_DIR="${IMAGES_DIR}"
+LOG_DIR="${LOG_DIR}"
+ORDS_PORT="${ORDS_PORT}"
+DB_PORT="${DB_PORT}"
+DB_SERVICE="${DB_SERVICE}"
+
+case "\$1" in
+    start)
+        echo "Starting Oracle APEX services..."
+        docker start ${CONTAINER_NAME} 2>/dev/null
+        sleep 120
+
+        PASS=\$(cat "\$PROJECT_DIR/.db_password" 2>/dev/null)
+        if [ -n "\$PASS" ]; then
+            echo "\$PASS" | "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" config secret --password-stdin db.password 2>/dev/null || true
+        fi
+
+        export ORDS_CONFIG="\$ORDS_CONFIG_DIR"
+        export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
+        nohup "\$ORDS_BIN" --config "\$ORDS_CONFIG_DIR" serve \
+            --port \$ORDS_PORT \
+            --apex-images "\$IMAGES_DIR" \
+            > "\$LOG_DIR/ords.log" 2>&1 &
+        echo \$! > "\$PROJECT_DIR/ords.pid"
+
+        echo "Oracle APEX started"
+        ;;
+    stop)
+        echo "Stopping Oracle APEX services..."
+        if [ -f "\$PROJECT_DIR/ords.pid" ]; then
+            kill \$(cat "\$PROJECT_DIR/ords.pid") 2>/dev/null
+            rm -f "\$PROJECT_DIR/ords.pid"
+        fi
+        pkill -9 -f ords 2>/dev/null
+        docker stop ${CONTAINER_NAME} 2>/dev/null
+        echo "Oracle APEX stopped"
+        ;;
+    restart)
+        \$0 stop
+        sleep 5
+        \$0 start
+        ;;
+    status)
+        if docker inspect -f '{{.State.Running}}' ${CONTAINER_NAME} 2>/dev/null | grep -q "true"; then
+            echo "Database: Running"
+        else
+            echo "Database: Stopped"
+        fi
+
+        if pgrep -f "ords.*serve" >/dev/null 2>&1; then
+            echo "ORDS: Running"
+        else
+            echo "ORDS: Stopped"
+        fi
+        ;;
+    *)
+        echo "Usage: \$0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+SERVICEEOF
+    chmod +x "$SCRIPTS_DIR/oracle-apex-service.sh"
+
+    run_sudo tee /etc/systemd/system/oracle-apex.service > /dev/null << SYSTEMDEOF
+[Unit]
+Description=Oracle APEX and ORDS Service - KaizenixCore v${VERSION}
+Documentation=https://github.com/KaizenixCore/oracle-apex-installer
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=forking
+User=$USER
+Group=$USER
+WorkingDirectory=$PROJECT_DIR
+ExecStart=$SCRIPTS_DIR/oracle-apex-service.sh start
+ExecStop=$SCRIPTS_DIR/oracle-apex-service.sh stop
+ExecReload=$SCRIPTS_DIR/oracle-apex-service.sh restart
+RemainAfterExit=yes
+TimeoutStartSec=300
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+SYSTEMDEOF
+
+    run_sudo systemctl daemon-reload
+    run_sudo systemctl enable oracle-apex.service
+
+    log "Systemd service created and enabled"
+
+    gui_info "$(get_text info)" "$(get_text service_created)"
+}
+
+repair_installation() {
+    log "REPAIR INSTALLATION - COMPREHENSIVE FIX FOR ERROR 571"
+
+    if [ -z "$ORACLE_PASSWORD" ] || [ -z "$APEX_ADMIN_PASSWORD" ]; then
+        log "Passwords not set!"
+        gui_error "$(get_text error)" "Passwords not configured."
+        return 1
+    fi
+
+    start_progress
+
+    update_progress 5 "Stopping ORDS..."
+    pkill -9 -f "ords.*serve" 2>/dev/null || true
+    pkill -9 -f "java.*ords" 2>/dev/null || true
+    sleep 5
+
+    update_progress 10 "Starting database..."
+    docker start "$CONTAINER_NAME" 2>/dev/null || true
+    sleep 10
+
+    update_progress 15 "Waiting for database..."
+    local db_ready=false
+    for i in {1..120}; do
+        if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "DATABASE IS READY"; then
+            db_ready=true
+            break
+        fi
+        sleep 5
+    done
+    sleep 30
+
+    update_progress 25 "$(get_text resetting_password)"
+    docker exec "$CONTAINER_NAME" resetPassword "$ORACLE_PASSWORD" >> "$INSTALL_LOG" 2>&1 || true
+    sleep 20
+
+    update_progress 30 "Disabling password policies..."
+    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
+ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
+COMMIT;
+EXIT;
+EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+
+    update_progress 40 "Fixing ORDS_PUBLIC_USER..."
+    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
+BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
+/
+CREATE USER ORDS_PUBLIC_USER IDENTIFIED BY \"${ORACLE_PASSWORD}\" DEFAULT TABLESPACE SYSAUX QUOTA UNLIMITED ON SYSAUX;
+GRANT CONNECT, RESOURCE TO ORDS_PUBLIC_USER;
+GRANT CREATE SESSION, ALTER SESSION TO ORDS_PUBLIC_USER;
+GRANT CREATE PROCEDURE, CREATE SEQUENCE, CREATE TABLE, CREATE TRIGGER, CREATE VIEW, CREATE SYNONYM, CREATE TYPE TO ORDS_PUBLIC_USER;
+GRANT UNLIMITED TABLESPACE TO ORDS_PUBLIC_USER;
+GRANT EXECUTE ON SYS.DBMS_CRYPTO TO ORDS_PUBLIC_USER;
+GRANT EXECUTE ON SYS.DBMS_LOB TO ORDS_PUBLIC_USER;
+GRANT EXECUTE ON SYS.DBMS_OUTPUT TO ORDS_PUBLIC_USER;
+GRANT EXECUTE ON SYS.DBMS_SESSION TO ORDS_PUBLIC_USER;
+GRANT EXECUTE ON SYS.UTL_HTTP TO ORDS_PUBLIC_USER;
+GRANT EXECUTE ON SYS.UTL_RAW TO ORDS_PUBLIC_USER;
+ALTER USER ORDS_PUBLIC_USER ACCOUNT UNLOCK;
+COMMIT;
+EXIT;
+EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+
+    update_progress 50 "Fixing APEX users..."
+    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
+BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
+/
+BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_LISTENER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
+/
+BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
+/
+ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+COMMIT;
+EXIT;
+EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+
+    update_progress 55 "Resetting APEX admin password..."
+    local apex_schema=$(cat "$PROJECT_DIR/.apex_schema" 2>/dev/null)
+    [ -z "$apex_schema" ] && apex_schema="APEX_240100"
+
+    docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
+BEGIN
+    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('REQUIRE_HTTPS', 'N');
+    ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
+    ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
+    BEGIN
+        ${apex_schema}.APEX_UTIL.EDIT_USER(
+            p_user_id                      => ${apex_schema}.APEX_UTIL.GET_USER_ID('ADMIN'),
+            p_user_name                    => 'ADMIN',
+            p_web_password                 => '${APEX_ADMIN_PASSWORD}',
+            p_new_password                 => '${APEX_ADMIN_PASSWORD}',
+            p_change_password_on_first_use => 'N',
+            p_account_locked               => 'N'
+        );
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+    COMMIT;
+END;
+/
+EXIT;
+EOSQL" >> "$INSTALL_LOG" 2>&1 || true
+
+    update_progress 65 "Reinstalling ORDS connection..."
+    local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+
+    if [ -n "$ORDS_BIN" ] && [ -x "$ORDS_BIN" ]; then
+        rm -rf "$ORDS_CONFIG_DIR/databases" 2>/dev/null || true
+        mkdir -p "$ORDS_CONFIG_DIR/databases/default"
+
+        local PASS_FILE=$(mktemp)
+        printf "%s\n%s\n%s\n" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" "$ORACLE_PASSWORD" > "$PASS_FILE"
+
+        "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" install \
+            --admin-user SYS \
+            --db-hostname localhost \
+            --db-port "$DB_PORT" \
+            --db-servicename "$DB_SERVICE" \
+            --feature-sdw true \
+            --feature-rest-enabled-sql true \
+            --gateway-mode proxied \
+            --gateway-user ORDS_PUBLIC_USER \
+            --password-stdin < "$PASS_FILE" >> "$INSTALL_LOG" 2>&1 || true
+
+        rm -f "$PASS_FILE"
+
+        echo "$ORACLE_PASSWORD" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config secret --password-stdin db.password >> "$INSTALL_LOG" 2>&1 || true
+    fi
+
+    update_progress 75 "$(get_text fixing_images)"
+    fix_apex_images
+
+    update_progress 80 "Saving configuration..."
+    echo "$ORACLE_PASSWORD" > "$PROJECT_DIR/.db_password"
+    echo "$APEX_ADMIN_PASSWORD" > "$PROJECT_DIR/.apex_password"
+    chmod 600 "$PROJECT_DIR/.db_password" "$PROJECT_DIR/.apex_password"
+
+    update_progress 85 "Starting ORDS..."
+    pkill -9 -f "ords.*serve" 2>/dev/null || true
+    sleep 5
+    run_sudo fuser -k "${ORDS_PORT}/tcp" 2>/dev/null || true
+    sleep 2
+
+    if [ -n "$ORDS_BIN" ] && [ -x "$ORDS_BIN" ]; then
+        export ORDS_CONFIG="$ORDS_CONFIG_DIR"
+        export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
+
+        nohup "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
+            --port "$ORDS_PORT" \
+            --apex-images "$IMAGES_DIR" \
+            > "$LOG_DIR/ords.log" 2>&1 &
+
+        local ords_pid=$!
+        echo "$ords_pid" > "$PROJECT_DIR/ords.pid"
+        log "ORDS started with PID $ords_pid"
+    fi
+
+    update_progress 95 "Waiting for ORDS..."
+    sleep 120
+
+    update_progress 100 "$(get_text verifying)"
+
+    local http_admin=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/ords/apex_admin" 2>/dev/null || echo "000")
+    log "Verification - Admin: HTTP $http_admin"
+
+    stop_progress
+
+    if [[ "$http_admin" =~ ^(200|302|303)$ ]]; then
+        log "REPAIR SUCCESSFUL!"
+        gui_info "$(get_text success_title)" \
+            "✅ Repair Completed Successfully!\n\n🌐 Admin Panel:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\n🔐 Login Page:\nhttp://localhost:${ORDS_PORT}/ords/f?p=4550\n\n📋 Credentials:\nUsername: ADMIN\nPassword: (your password)" 600 400
+        return 0
+    else
+        log "Repair completed but APEX may need more time"
+        gui_warning "$(get_text warning)" \
+            "⚠️ Repair completed but APEX is still initializing.\n\nPlease wait 2-3 minutes and try:\nhttp://localhost:${ORDS_PORT}/ords/apex_admin\n\nIf still having issues, run:\nbash ~/oracle-apex-complete/scripts/fix.sh" 600 400
+        return 0
+    fi
+}
 run_fresh_installation() {
     log "Starting fresh installation v${VERSION}..."
-    
-    # Create directories
+
     safe_mkdir "$PROJECT_DIR"
     safe_mkdir "$DOWNLOADS_DIR"
     safe_mkdir "$LOG_DIR"
@@ -3235,49 +1980,43 @@ run_fresh_installation() {
     safe_mkdir "$ORDS_CONFIG_DIR/global"
     safe_touch "$INSTALL_LOG"
     safe_touch "$LOG_DIR/ords.log"
-    
+
     start_progress
-    
-    # Step 1: Save passwords
+
     update_progress 2 "$(get_text step) 1/26: Saving configuration..."
     echo "$ORACLE_PASSWORD" > "$PROJECT_DIR/.db_password"
     echo "$APEX_ADMIN_PASSWORD" > "$PROJECT_DIR/.apex_password"
     chmod 600 "$PROJECT_DIR/.db_password" "$PROJECT_DIR/.apex_password"
 
-    # Step 2: Install dependencies
     update_progress 5 "$(get_text step) 2/26: $(get_text installing_deps)"
     install_dependencies
 
-    # Step 3: Download APEX
     update_progress 10 "$(get_text step) 3/26: $(get_text downloading) APEX..."
     if [ ! -f "$DOWNLOADS_DIR/apex-latest.zip" ]; then
         wget -q --show-progress -O "$DOWNLOADS_DIR/apex-latest.zip" "$APEX_URL" 2>/dev/null || \
         curl -L -o "$DOWNLOADS_DIR/apex-latest.zip" "$APEX_URL" 2>/dev/null || true
     fi
 
-    # Step 4: Download ORDS
     update_progress 15 "$(get_text step) 4/26: $(get_text downloading) ORDS..."
     if [ ! -f "$DOWNLOADS_DIR/ords-latest.zip" ]; then
         wget -q --show-progress -O "$DOWNLOADS_DIR/ords-latest.zip" "$ORDS_URL" 2>/dev/null || \
         curl -L -o "$DOWNLOADS_DIR/ords-latest.zip" "$ORDS_URL" 2>/dev/null || true
     fi
 
-    # Step 5: Extract files
     update_progress 18 "$(get_text step) 5/26: $(get_text extracting)"
     cd "$PROJECT_DIR" || exit 1
-    
+
     rm -rf apex ords 2>/dev/null || true
     unzip -q -o "$DOWNLOADS_DIR/apex-latest.zip" 2>/dev/null || true
     mkdir -p ords
     unzip -q -o "$DOWNLOADS_DIR/ords-latest.zip" -d ords 2>/dev/null || true
-    
+
     find ords -name "ords" -type f -exec chmod +x {} \; 2>/dev/null || true
-    
+
     rm -rf "$IMAGES_DIR" 2>/dev/null || true
     cp -r "$PROJECT_DIR/apex/images" "$IMAGES_DIR" 2>/dev/null || true
     chmod -R 755 "$IMAGES_DIR" 2>/dev/null || true
 
-    # Step 6: Create Docker Compose
     update_progress 22 "$(get_text step) 6/26: Creating Docker configuration..."
     cat > "$PROJECT_DIR/docker-compose.yml" << COMPOSEOF
 version: '3.8'
@@ -3307,23 +2046,20 @@ volumes:
     name: oracle-apex-data
 COMPOSEOF
 
-    # Step 7: Start Database
     update_progress 26 "$(get_text step) 7/26: $(get_text starting_db)"
     cd "$PROJECT_DIR" || exit 1
     docker compose up -d 2>/dev/null || docker-compose up -d 2>/dev/null || true
-    
+
     update_progress 30 "Waiting for database (5-10 minutes)..."
     if ! wait_for_database_ready; then
         log "Warning: Database wait timed out, continuing..."
     fi
     sleep 60
 
-    # Step 8: Reset password
     update_progress 35 "$(get_text step) 8/26: $(get_text resetting_password)"
     docker exec "$CONTAINER_NAME" resetPassword "$ORACLE_PASSWORD" >> "$INSTALL_LOG" 2>&1 || true
     sleep 30
 
-    # Step 9: Disable password policies
     update_progress 38 "$(get_text step) 9/26: Disabling password policies..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
 ALTER PROFILE DEFAULT LIMIT FAILED_LOGIN_ATTEMPTS UNLIMITED PASSWORD_LIFE_TIME UNLIMITED PASSWORD_VERIFY_FUNCTION NULL;
@@ -3331,28 +2067,24 @@ COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 10: Install APEX
     update_progress 40 "$(get_text step) 10/26: $(get_text installing_apex)"
     docker exec "$CONTAINER_NAME" bash -c "cd /opt/oracle/apex && sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
 @apexins.sql SYSAUX SYSAUX TEMP /i/
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 11: Reset image prefix
     update_progress 48 "$(get_text step) 11/26: $(get_text fixing_images)"
     docker exec "$CONTAINER_NAME" bash -c "cd /opt/oracle/apex && sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
 @utilities/reset_image_prefix.sql
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 12: APEX REST config
     update_progress 50 "$(get_text step) 12/26: Configuring REST services..."
     docker exec "$CONTAINER_NAME" bash -c "cd /opt/oracle/apex && sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
 @apex_rest_config.sql ${ORACLE_PASSWORD} ${ORACLE_PASSWORD}
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 13: Create ORDS_PUBLIC_USER
     update_progress 54 "$(get_text step) 13/26: Creating ORDS_PUBLIC_USER..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
 BEGIN EXECUTE IMMEDIATE 'DROP USER ORDS_PUBLIC_USER CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
@@ -3373,7 +2105,6 @@ COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 14: Fix APEX users
     update_progress 58 "$(get_text step) 14/26: Fixing APEX users..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
 BEGIN EXECUTE IMMEDIATE 'ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK'; EXCEPTION WHEN OTHERS THEN NULL; END;
@@ -3386,7 +2117,6 @@ COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 15: Grant proxy permissions
     update_progress 62 "$(get_text step) 15/26: Granting proxy permissions..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << 'EOSQL'
 ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
@@ -3396,11 +2126,10 @@ COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 16: Find APEX schema and create admin
     update_progress 66 "$(get_text step) 16/26: Creating APEX admin..."
     local apex_schema
     apex_schema=$(docker exec "$CONTAINER_NAME" bash -c "echo \"SET HEADING OFF FEEDBACK OFF PAGESIZE 0; SELECT USERNAME FROM ALL_USERS WHERE USERNAME LIKE 'APEX_2%' ORDER BY USERNAME DESC FETCH FIRST 1 ROW ONLY;\" | sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba" 2>/dev/null | grep -E "^APEX_" | head -1 | tr -d ' ') || true
-    
+
     [ -z "$apex_schema" ] && apex_schema="APEX_240100"
     echo "$apex_schema" > "$PROJECT_DIR/.apex_schema"
 
@@ -3410,7 +2139,7 @@ BEGIN
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('IMAGE_PREFIX', '/i/');
     ${apex_schema}.APEX_INSTANCE_ADMIN.SET_PARAMETER('RESTFUL_SERVICES_ENABLED', 'Y');
     ${apex_schema}.WWV_FLOW_API.SET_SECURITY_GROUP_ID(10);
-    
+
     BEGIN
         ${apex_schema}.APEX_UTIL.CREATE_USER(
             p_user_name                    => 'ADMIN',
@@ -3430,19 +2159,18 @@ BEGIN
             p_account_locked               => 'N'
         );
     END;
-    
+
     COMMIT;
 END;
 /
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 17: Install ORDS
     update_progress 70 "$(get_text step) 17/26: Installing ORDS..."
     local ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
 
     if [ -z "$ORDS_BIN" ]; then
-        log_error "ORDS binary not found!"
+        log "ORDS binary not found!"
         gui_error "$(get_text error)" "ORDS binary not found"
         return 1
     fi
@@ -3469,7 +2197,6 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
     rm -f "$PASS_FILE"
 
-    # Step 18: Configure ORDS
     update_progress 75 "$(get_text step) 18/26: $(get_text configuring_ords)"
     if [ -n "$ORDS_BIN" ]; then
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.http.port "$ORDS_PORT" >> "$INSTALL_LOG" 2>&1 || true
@@ -3477,11 +2204,10 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.context.path /i >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.static.path "$IMAGES_DIR" >> "$INSTALL_LOG" 2>&1 || true
         "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config set standalone.doc.root "$IMAGES_DIR" >> "$INSTALL_LOG" 2>&1 || true
-        
+
         echo "$ORACLE_PASSWORD" | "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" config secret --password-stdin db.password >> "$INSTALL_LOG" 2>&1 || true
     fi
 
-    # Create settings.xml with correct paths
     cat > "$ORDS_CONFIG_DIR/settings.xml" << SETTINGSEOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
@@ -3501,7 +2227,6 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 </properties>
 SETTINGSEOF
 
-    # Step 19: Final user fixes
     update_progress 78 "$(get_text step) 19/26: Final database configuration..."
     docker exec "$CONTAINER_NAME" bash -c "sqlplus -s sys/${ORACLE_PASSWORD}@//localhost:${DB_PORT}/${DB_SERVICE} as sysdba << EOSQL
 ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD} ACCOUNT UNLOCK;
@@ -3515,7 +2240,6 @@ COMMIT;
 EXIT;
 EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
-    # Step 20: Start ORDS
     update_progress 82 "$(get_text step) 20/26: Starting ORDS..."
     pkill -9 -f "ords.*serve" 2>/dev/null || true
     pkill -9 -f "java.*ords" 2>/dev/null || true
@@ -3525,48 +2249,42 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
 
     if [ -n "$ORDS_BIN" ]; then
         export ORDS_CONFIG="$ORDS_CONFIG_DIR"
-        export _JAVA_OPTIONS="-Xms512m -Xmx1024m -Dfile.encoding=UTF-8"
-        
+        export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
+
         nohup "$ORDS_BIN" --config "$ORDS_CONFIG_DIR" serve \
             --port "$ORDS_PORT" \
             --apex-images "$IMAGES_DIR" \
             > "$LOG_DIR/ords.log" 2>&1 &
-        
+
         local ords_pid=$!
         echo "$ords_pid" > "$PROJECT_DIR/ords.pid"
         log "ORDS started with PID $ords_pid"
     fi
 
-    # Step 21: Wait for ORDS
     update_progress 88 "$(get_text step) 21/26: Waiting for ORDS (2 minutes)..."
     sleep 120
 
-    # Step 22: Create management scripts
     update_progress 92 "$(get_text step) 22/26: $(get_text creating_scripts)"
     create_management_scripts
 
-    # Step 23: Verify installation
     update_progress 96 "$(get_text step) 23/26: $(get_text verifying)"
     local http_admin=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/ords/apex_admin" 2>/dev/null || echo "000")
     local http_img=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${ORDS_PORT}/i/apex_version.txt" 2>/dev/null || echo "000")
     log "Verification - Admin: $http_admin, Images: $http_img"
 
-    # Step 24: Complete
     update_progress 100 "$(get_text completed)"
     stop_progress
 
-    # Show success message
     local success_msg=$(get_text success_text)
     success_msg="${success_msg//%PASSWORD%/$APEX_ADMIN_PASSWORD}"
     gui_info "$(get_text success_title)" "$success_msg" 600 500
 
-    # Step 25: Ask about systemd service
     if [ "$OS_TYPE" = "linux" ]; then
         if gui_question "$(get_text create_service_title)" "$(get_text create_service_text)"; then
             create_systemd_service
         fi
     fi
-# Step 26: Ask about DBeaver
+
     if gui_question "$(get_text install_dbeaver_title)" "Would you like to install DBeaver database manager?\n\nDBeaver is a free database management tool that allows you to:\n• Connect to Oracle Database\n• Browse tables and data\n• Run SQL queries\n• Export/Import data"; then
         start_progress
         update_progress 50 "$(get_text installing_dbeaver)"
@@ -3580,13 +2298,10 @@ EOSQL" >> "$INSTALL_LOG" 2>&1 || true
         fi
     fi
 
-    log_success "Fresh installation completed successfully!"
+    log "Fresh installation completed successfully!"
     return 0
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# MAIN MENU
-#═══════════════════════════════════════════════════════════════════════════════
 show_main_menu() {
     while true; do
         local choice=$(gui_list "$(get_text select_action)" "$(get_text action_text)" \
@@ -3620,13 +2335,13 @@ show_main_menu() {
                     start_progress
                     update_progress 10 "Stopping all services..."
                     pkill -9 -f ords 2>/dev/null || true
-                    
+
                     update_progress 30 "$(get_text cleaning)"
                     complete_cleanup
-                    
+
                     update_progress 50 "Starting fresh installation..."
                     stop_progress
-                    
+
                     run_fresh_installation
                 fi
                 ;;
@@ -3635,13 +2350,13 @@ show_main_menu() {
                     start_progress
                     update_progress 20 "Stopping services..."
                     pkill -9 -f ords 2>/dev/null || true
-                    
+
                     update_progress 50 "Removing all components..."
                     complete_uninstall
-                    
+
                     update_progress 100 "Uninstall complete"
                     stop_progress
-                    
+
                     gui_info "$(get_text info)" "Oracle APEX has been completely removed.\n\nAll data, containers, and configurations have been deleted."
                     exit 0
                 fi
@@ -3658,13 +2373,9 @@ show_main_menu() {
     done
 }
 
-#═══════════════════════════════════════════════════════════════════════════════
-# MAIN ENTRY POINT
-#═══════════════════════════════════════════════════════════════════════════════
 main() {
-    # Clear screen
     clear
-    
+
     echo ""
     echo "╔═══════════════════════════════════════════════════════════════════╗"
     echo "║                                                                   ║"
@@ -3680,12 +2391,11 @@ main() {
     echo "║                                                                   ║"
     echo "╚═══════════════════════════════════════════════════════════════════╝"
     echo ""
-    
-    # Initialize log
+
     safe_mkdir "$PROJECT_DIR"
     safe_mkdir "$LOG_DIR"
     safe_touch "$INSTALL_LOG"
-    
+
     log "═══════════════════════════════════════════════════════════════"
     log "Oracle APEX GUI Installer v${VERSION} started"
     log "Date: $(date)"
@@ -3693,53 +2403,39 @@ main() {
     log "Home: $HOME"
     log "═══════════════════════════════════════════════════════════════"
 
-    # Detect OS first
     detect_os
     log "OS Type: $OS_TYPE"
     log "OS ID: $OS_ID"
     log "OS Version: $OS_VERSION"
     log "Architecture: $ARCH"
 
-    # Install GUI tool
     echo "Checking GUI tools..."
     install_gui_tool
     log "GUI Tool: $GUI_TOOL"
 
-    # Select language
     select_language
 
-    # Show welcome message
     gui_info "$(get_text welcome_title)" "$(get_text welcome_text)" 650 600
 
-    # Get sudo password
     get_sudo_password
 
-    # Show main menu
     show_main_menu
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SIGNAL HANDLERS
-# ═══════════════════════════════════════════════════════════════════════════════
 cleanup_on_exit() {
-    # Clean up progress bar if running
     if [ -n "$FIFO_FILE" ] && [ -e "$FIFO_FILE" ]; then
         exec 3>&- 2>/dev/null || true
         rm -f "$FIFO_FILE" 2>/dev/null || true
     fi
-    
+
     if [ -n "$PROGRESS_PID" ]; then
         kill "$PROGRESS_PID" 2>/dev/null || true
     fi
-    
+
     log "Installer exited"
 }
 
 trap cleanup_on_exit EXIT
 trap 'echo ""; echo "Installation cancelled by user."; exit 1' INT TERM
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# RUN MAIN FUNCTION
-# ═══════════════════════════════════════════════════════════════════════════════
 main "$@"
-    
