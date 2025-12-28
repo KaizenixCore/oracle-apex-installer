@@ -2829,19 +2829,24 @@ fi
 if [ ! -f "$ORDS_CONFIG_DIR/databases/default/ords_params.properties" ]; then
     log "⚠️ ords_params.properties not found, creating manually..."
     
-    cat > "$ORDS_CONFIG_DIR/databases/default/ords_params.properties" << 'PARAMSEOF'
+    cat > "$ORDS_CONFIG_DIR/databases/default/ords_params.properties" << PARAMSEOF
 db.hostname=localhost
 db.port=1521
 db.servicename=XEPDB1
-db.username=SYS
-db.password=${ORACLE_PASSWORD}
+db.username=ORDS_PUBLIC_USER
+db.password=$ORACLE_PASSWORD
 feature.sdw=true
 feature.rest.enabled.sql=true
 gateway.mode=proxied
 gateway.user=ORDS_PUBLIC_USER
 PARAMSEOF
     
-    sed -i "s|\${ORACLE_PASSWORD}|$ORACLE_PASSWORD|g" "$ORDS_CONFIG_DIR/databases/default/ords_params.properties"
+    # اختیاری: اگر رمز حاوی کاراکتر ویژه است
+    chmod 600 "$ORDS_CONFIG_DIR/databases/default/ords_params.properties"
+    
+    log "✅ ords_params.properties created successfully"
+else
+    log "✅ ords_params.properties already exists"
 fi
 
 log "✅ ORDS installed"
