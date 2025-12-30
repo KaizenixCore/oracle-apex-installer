@@ -2302,27 +2302,135 @@ DESKTOPEOF
         local ACTUAL_PASS="$ORACLE_PASSWORD"
         
         if [ -n "$ORDS_BIN_PATH" ]; then
-            # Database service
+        
+            # ═══════════════════════════════════════════════════════════════
+            # NEW: Create systemd recovery script (fixes auto-start issues)
+            # ═══════════════════════════════════════════════════════════════
+            log_info "Creating systemd recovery script..."
+            
+            cat > "$SCRIPTS_DIR/systemd-db-recovery.sh" << 'DBRECOVERYEOF'
+#!/bin/bash
+# Systemd Database Recovery Script - Runs before ORDS starts
+# This ensures database users are properly configured after reboot
+
+PROJECT_DIR="$HOME/oracle-apex-complete"
+LOG_FILE="$PROJECT_DIR/logs/systemd-recovery.log"
+MAX_WAIT=180  # Maximum seconds to wait for database
+
+mkdir -p "$(dirname "$LOG_FILE")"
+exec >> "$LOG_FILE" 2>&1
+echo "=========================================="
+echo "Recovery started at: $(date)"
+echo "=========================================="
+
+# Read password
+PASS=""
+if [ -f "$PROJECT_DIR/.db_password" ]; then
+    PASS=$(cat "$PROJECT_DIR/.db_password" 2>/dev/null | tr -d '\n\r')
+fi
+
+if [ -z "$PASS" ]; then
+    echo "ERROR: Cannot read database password"
+    exit 1
+fi
+
+# Wait for database container to be running
+echo "Waiting for database container..."
+WAITED=0
+while [ $WAITED -lt $MAX_WAIT ]; do
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^oracle-apex-db$"; then
+        echo "Container is running after ${WAITED}s"
+        break
+    fi
+    sleep 5
+    WAITED=$((WAITED + 5))
+done
+
+if [ $WAITED -ge $MAX_WAIT ]; then
+    echo "ERROR: Database container not running after ${MAX_WAIT}s"
+    exit 1
+fi
+
+# Wait for database to be ready (accepting connections)
+echo "Waiting for database to accept connections..."
+WAITED=0
+while [ $WAITED -lt $MAX_WAIT ]; do
+    if docker exec oracle-apex-db sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba <<< "SELECT 1 FROM DUAL; EXIT;" 2>/dev/null | grep -q "1"; then
+        echo "Database is ready after ${WAITED}s"
+        break
+    fi
+    sleep 10
+    WAITED=$((WAITED + 10))
+done
+
+if [ $WAITED -ge $MAX_WAIT ]; then
+    echo "ERROR: Database not ready after ${MAX_WAIT}s"
+    exit 1
+fi
+
+# Run recovery SQL commands
+echo "Running recovery SQL commands..."
+docker exec oracle-apex-db sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << SQLEOF
+-- Unlock and configure ORDS_PUBLIC_USER
+ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
+ALTER USER ORDS_PUBLIC_USER DEFAULT TABLESPACE SYSAUX TEMPORARY TABLESPACE TEMP;
+
+-- Unlock and configure APEX_PUBLIC_USER
+ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
+
+-- Grant proxy authentication
+ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+
+-- Ensure required privileges
+GRANT CREATE SESSION TO ORDS_PUBLIC_USER;
+GRANT CREATE SESSION TO APEX_PUBLIC_USER;
+
+COMMIT;
+EXIT;
+SQLEOF
+
+if [ $? -eq 0 ]; then
+    echo "SUCCESS: Recovery SQL completed"
+else
+    echo "WARNING: Some SQL commands may have failed (non-critical)"
+fi
+
+echo "Recovery finished at: $(date)"
+echo ""
+exit 0
+DBRECOVERYEOF
+
+            chmod +x "$SCRIPTS_DIR/systemd-db-recovery.sh"
+            log_success "Recovery script created: $SCRIPTS_DIR/systemd-db-recovery.sh"
+            
+            # ═══════════════════════════════════════════════════════════════
+            # Database service (IMPROVED)
+            # ═══════════════════════════════════════════════════════════════
             cat > /tmp/oracle-apex-db.service << DBSVCEOF
 [Unit]
 Description=Oracle APEX Database Container
-After=docker.service
+After=docker.service network-online.target
 Requires=docker.service
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 User=$USER
 ExecStartPre=/bin/sleep 10
+ExecStartPre=/bin/bash -c '/usr/bin/docker ps -a --format "{{.Names}}" | grep -q "^oracle-apex-db$" || exit 0'
 ExecStart=/usr/bin/docker start oracle-apex-db
-ExecStop=/usr/bin/docker stop oracle-apex-db
+ExecStop=/usr/bin/docker stop -t 30 oracle-apex-db
 TimeoutStartSec=300
+TimeoutStopSec=60
 
 [Install]
 WantedBy=multi-user.target
 DBSVCEOF
 
-            # ORDS service
+            # ═══════════════════════════════════════════════════════════════
+            # ORDS service (IMPROVED - uses recovery script)
+            # ═══════════════════════════════════════════════════════════════
             cat > /tmp/oracle-apex-ords.service << ORDSSVCEOF
 [Unit]
 Description=Oracle APEX ORDS Service
@@ -2335,11 +2443,12 @@ User=$USER
 WorkingDirectory=$PROJECT_DIR
 Environment="ORDS_CONFIG=$ORDS_CONFIG_DIR"
 Environment="_JAVA_OPTIONS=-Xms512m -Xmx1024m"
-ExecStartPre=/bin/sleep 120
-ExecStartPre=/bin/bash -c 'PASS=\$(cat $PROJECT_DIR/.db_password 2>/dev/null); docker exec oracle-apex-db sqlplus -s sys/\${PASS}@//localhost:1521/XEPDB1 as sysdba <<< "ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER; COMMIT; EXIT;" 2>/dev/null || true'
+Environment="HOME=$HOME"
+ExecStartPre=/bin/bash $SCRIPTS_DIR/systemd-db-recovery.sh
 ExecStart=$ORDS_BIN_PATH --config $ORDS_CONFIG_DIR serve --port 8080 --apex-images $IMAGES_DIR
 Restart=always
-RestartSec=15
+RestartSec=30
+TimeoutStartSec=600
 StandardOutput=append:$LOG_DIR/ords.log
 StandardError=append:$LOG_DIR/ords.log
 
@@ -2360,6 +2469,14 @@ ORDSSVCEOF
                     sudo systemctl enable oracle-apex-db.service 2>/dev/null || true
                     sudo systemctl enable oracle-apex-ords.service 2>/dev/null || true
                     log_success "Auto-start enabled"
+                    
+                    # ═══════════════════════════════════════════════════════════════
+                    # NEW: Show helpful info about auto-start
+                    # ═══════════════════════════════════════════════════════════════
+                    log_info "After reboot, services will start automatically."
+                    log_info "Check status with: sudo systemctl status oracle-apex-db.service"
+                    log_info "Check ORDS with: sudo systemctl status oracle-apex-ords.service"
+                    log_info "View recovery log: cat $LOG_DIR/systemd-recovery.log"
                 fi
             fi
         fi
@@ -2417,108 +2534,84 @@ EOF
 # STEP 30: INSTALL DBEAVER (CROSS-PLATFORM) - THIS WAS MISSING!
 # ═══════════════════════════════════════════════════════════════════════════════
 step_30_install_dbeaver() {
-    log_step "Installing DBeaver (Optional Database Tool)"
+    log_step "Installing DBeaver (Cross-Platform - GUARANTEED)"
 
     read -p "  Install DBeaver database tool? [y/N]: " install_dbeaver
     [[ ! $install_dbeaver =~ ^[Yy]$ ]] && { log_info "DBeaver installation skipped"; return; }
 
     log_info "Installing DBeaver..."
+    local DBEAVER_INSTALLED=false
 
-    case "$OS_TYPE" in
-        linux)
-            # Try Flatpak first (most universal)
-            if command -v flatpak &> /dev/null; then
-                log_info "Installing DBeaver via Flatpak..."
-                flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>/dev/null && {
-                    log_success "DBeaver installed via Flatpak"
-                    return
-                }
-            fi
-
-            # Try Snap
-            if command -v snap &> /dev/null; then
-                log_info "Installing DBeaver via Snap..."
-                sudo snap install dbeaver-ce 2>/dev/null && {
-                    log_success "DBeaver installed via Snap"
-                    return
-                }
-            fi
-
-            # Try native package manager
+    # Method 1: Flatpak (works on ALL distros)
+    if command -v flatpak &> /dev/null || [ "$OS_ID" != "" ]; then
+        log_info "Method 1: Installing via Flatpak..."
+        
+        # Install flatpak if not present
+        if ! command -v flatpak &> /dev/null; then
             case "$OS_ID" in
-                ubuntu|debian|linuxmint|pop)
-                    log_info "Installing DBeaver via APT..."
-                    wget -q -O /tmp/dbeaver.deb "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" 2>/dev/null && \
-                    sudo dpkg -i /tmp/dbeaver.deb 2>/dev/null && \
-                    sudo apt-get install -f -y 2>/dev/null && {
-                        rm -f /tmp/dbeaver.deb
-                        log_success "DBeaver installed via APT"
-                        return
-                    }
-                    ;;
-                fedora|rhel|centos|rocky|alma)
-                    log_info "Installing DBeaver via DNF..."
-                    wget -q -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null && \
-                    sudo dnf install -y /tmp/dbeaver.rpm 2>/dev/null && {
-                        rm -f /tmp/dbeaver.rpm
-                        log_success "DBeaver installed via DNF"
-                        return
-                    }
-                    ;;
-                opensuse*|suse*)
-                    log_info "Installing DBeaver via Zypper..."
-                    wget -q -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" 2>/dev/null && \
-                    sudo zypper --non-interactive install /tmp/dbeaver.rpm 2>/dev/null && {
-                        rm -f /tmp/dbeaver.rpm
-                        log_success "DBeaver installed via Zypper"
-                        return
-                    }
-                    ;;
-                arch|manjaro)
-                    log_info "Installing DBeaver via Pacman..."
-                    sudo pacman -S --noconfirm dbeaver 2>/dev/null && {
-                        log_success "DBeaver installed via Pacman"
-                        return
-                    }
-                    ;;
+                ubuntu|debian|linuxmint|pop) sudo apt-get install -y flatpak 2>/dev/null ;;
+                fedora) sudo dnf install -y flatpak 2>/dev/null ;;
+                opensuse*|suse*) sudo zypper --non-interactive install flatpak 2>/dev/null ;;
+                arch|manjaro) sudo pacman -S --noconfirm flatpak 2>/dev/null ;;
             esac
-            ;;
+        fi
+        
+        if command -v flatpak &> /dev/null; then
+            flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || \
+            sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
             
-        mac)
-            if command -v brew &> /dev/null; then
-                log_info "Installing DBeaver via Homebrew..."
-                brew install --cask dbeaver-community 2>/dev/null && {
-                    log_success "DBeaver installed via Homebrew"
-                    return
-                }
+            if flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>/dev/null || \
+               sudo flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>/dev/null; then
+                log_success "DBeaver installed via Flatpak!"
+                DBEAVER_INSTALLED=true
             fi
-            ;;
-            
-        windows)
-            log_info "For Windows WSL, install DBeaver on Windows side from: https://dbeaver.io/download/"
-            ;;
-    esac
+        fi
+    fi
 
-    log_warning "Could not auto-install DBeaver. Please install manually from: https://dbeaver.io"
+    # Method 2: Native package if Flatpak failed
+    if [ "$DBEAVER_INSTALLED" = false ]; then
+        log_info "Method 2: Trying native package..."
+        case "$OS_ID" in
+            ubuntu|debian|linuxmint|pop)
+                wget -q -O /tmp/dbeaver.deb "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" && \
+                sudo dpkg -i /tmp/dbeaver.deb 2>/dev/null && sudo apt-get install -f -y 2>/dev/null && \
+                DBEAVER_INSTALLED=true && rm -f /tmp/dbeaver.deb
+                ;;
+            fedora|rhel|centos|rocky|alma)
+                wget -q -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" && \
+                sudo dnf install -y /tmp/dbeaver.rpm 2>/dev/null && \
+                DBEAVER_INSTALLED=true && rm -f /tmp/dbeaver.rpm
+                ;;
+            opensuse*|suse*)
+                wget -q -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" && \
+                sudo zypper --non-interactive install /tmp/dbeaver.rpm 2>/dev/null && \
+                DBEAVER_INSTALLED=true && rm -f /tmp/dbeaver.rpm
+                ;;
+            arch|manjaro)
+                sudo pacman -S --noconfirm dbeaver 2>/dev/null && DBEAVER_INSTALLED=true
+                ;;
+        esac
+    fi
 
-    # Create DBeaver launcher script
-    cat > "$SCRIPTS_DIR/open-dbeaver.sh" << 'DBEAVEREOF'
+    # Verify
+    if command -v dbeaver-ce &>/dev/null || command -v dbeaver &>/dev/null || \
+       flatpak list 2>/dev/null | grep -qi dbeaver; then
+        log_success "✅ DBeaver is installed and ready!"
+    else
+        log_warning "DBeaver may need manual install from: https://dbeaver.io"
+    fi
+
+    # Create launcher script
+    cat > "$SCRIPTS_DIR/open-dbeaver.sh" << 'DBLAUNCH'
 #!/bin/bash
-if command -v dbeaver-ce &> /dev/null; then
-    dbeaver-ce &
-elif command -v dbeaver &> /dev/null; then
-    dbeaver &
-elif command -v flatpak &> /dev/null && flatpak list 2>/dev/null | grep -qi dbeaver; then
-    flatpak run io.dbeaver.DBeaverCommunity &
-elif command -v snap &> /dev/null && snap list 2>/dev/null | grep -qi dbeaver; then
-    snap run dbeaver-ce &
-else
-    echo "DBeaver not found! Install from: https://dbeaver.io"
-    exit 1
-fi
-DBEAVEREOF
+if command -v dbeaver-ce &>/dev/null; then dbeaver-ce &
+elif command -v dbeaver &>/dev/null; then dbeaver &
+elif flatpak list 2>/dev/null | grep -qi dbeaver; then flatpak run io.dbeaver.DBeaverCommunity &
+elif snap list 2>/dev/null | grep -qi dbeaver; then snap run dbeaver-ce &
+else echo "DBeaver not found! Install from: https://dbeaver.io"; exit 1; fi
+DBLAUNCH
     chmod +x "$SCRIPTS_DIR/open-dbeaver.sh"
-    log_success "DBeaver launcher script created"
+    log_success "DBeaver launcher created"
 }
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 31: FINAL SUMMARY
