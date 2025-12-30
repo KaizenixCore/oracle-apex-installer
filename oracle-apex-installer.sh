@@ -354,728 +354,103 @@ step_02_check() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 03: PREREQUISITES (CROSS-PLATFORM) - ULTIMATE VERSION
+# STEP 03: PREREQUISITES (CROSS-PLATFORM)
 # ═══════════════════════════════════════════════════════════════════════════════
 step_03_prerequisites() {
-    log_step "Installing Dependencies (Cross-Platform - Ultimate)"
+    log_step "Installing Dependencies (Cross-Platform)"
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # HELPER FUNCTION: Install package with multiple fallbacks
-    # ═══════════════════════════════════════════════════════════════════════════
-    install_package() {
-        local pkg_apt="$1"
-        local pkg_dnf="$2"
-        local pkg_zypper="$3"
-        local pkg_pacman="$4"
-        local pkg_brew="$5"
-        
-        case "$OS_TYPE" in
-            linux)
-                case "$OS_ID" in
-                    ubuntu|debian|linuxmint|pop|elementary|zorin|kali|parrot|mx)
-                        [ -n "$pkg_apt" ] && sudo apt-get install -y $pkg_apt 2>/dev/null || true
-                        ;;
-                    fedora)
-                        [ -n "$pkg_dnf" ] && sudo dnf install -y $pkg_dnf 2>/dev/null || true
-                        ;;
-                    rhel|centos|rocky|alma|oracle)
-                        [ -n "$pkg_dnf" ] && sudo dnf install -y $pkg_dnf 2>/dev/null || sudo yum install -y $pkg_dnf 2>/dev/null || true
-                        ;;
-                    opensuse*|suse*|sles)
-                        [ -n "$pkg_zypper" ] && sudo zypper --non-interactive install -y $pkg_zypper 2>/dev/null || true
-                        ;;
-                    arch|manjaro|endeavouros|garuda|artix)
-                        [ -n "$pkg_pacman" ] && sudo pacman -S --noconfirm --needed $pkg_pacman 2>/dev/null || true
-                        ;;
-                    void)
-                        [ -n "$pkg_apt" ] && sudo xbps-install -y $pkg_apt 2>/dev/null || true
-                        ;;
-                    alpine)
-                        [ -n "$pkg_apt" ] && sudo apk add --no-cache $pkg_apt 2>/dev/null || true
-                        ;;
-                    gentoo)
-                        [ -n "$pkg_apt" ] && sudo emerge --ask=n $pkg_apt 2>/dev/null || true
-                        ;;
-                    *)
-                        log_warning "Unknown distro, trying multiple package managers..."
-                        [ -n "$pkg_apt" ] && sudo apt-get install -y $pkg_apt 2>/dev/null || \
-                        [ -n "$pkg_dnf" ] && sudo dnf install -y $pkg_dnf 2>/dev/null || \
-                        [ -n "$pkg_zypper" ] && sudo zypper --non-interactive install -y $pkg_zypper 2>/dev/null || \
-                        [ -n "$pkg_pacman" ] && sudo pacman -S --noconfirm $pkg_pacman 2>/dev/null || true
-                        ;;
-                esac
-                ;;
-            mac)
-                [ -n "$pkg_brew" ] && brew install $pkg_brew 2>/dev/null || true
-                ;;
-        esac
-    }
-
-    # ═══════════════════════════════════════════════════════════════════════════
-    # LINUX INSTALLATION
-    # ═══════════════════════════════════════════════════════════════════════════
     case "$OS_TYPE" in
         linux)
-            log_info "Detected Linux: $OS_ID $OS_VERSION ($ARCH)"
-            
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.1: Update package manager cache
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Updating package manager cache..."
             case "$OS_ID" in
-                ubuntu|debian|linuxmint|pop|elementary|zorin|kali|parrot|mx)
-                    sudo apt-get update -qq 2>/dev/null || true
+opensuse*|suse*)
+                    log_info "Installing for openSUSE/SUSE..."
+                    sudo zypper --non-interactive install -y docker docker-compose java-17-openjdk unzip wget curl 2>/dev/null || true
+                    # Install YAD or Zenity
+                    sudo zypper --non-interactive install -y yad 2>/dev/null || sudo zypper --non-interactive install -y zenity 2>/dev/null || true
+                    # Install Flatpak for DBeaver
+                    sudo zypper --non-interactive install -y flatpak 2>/dev/null || true
+                    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
+                    ;;
+                ubuntu|debian|linuxmint|pop)
+                    log_info "Installing for Ubuntu/Debian..."
+                    sudo apt-get update -qq
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose openjdk-17-jdk unzip wget curl 2>/dev/null || true
+                    # Install YAD (better than Zenity) or Zenity
+                    sudo apt-get install -y yad 2>/dev/null || sudo apt-get install -y zenity 2>/dev/null || true
                     ;;
                 fedora)
-                    sudo dnf makecache --refresh -q 2>/dev/null || true
+                    log_info "Installing for Fedora..."
+                    sudo dnf install -y docker docker-compose java-17-openjdk unzip wget curl 2>/dev/null || true
+                    sudo dnf install -y yad 2>/dev/null || sudo dnf install -y zenity 2>/dev/null || true
                     ;;
-                rhel|centos|rocky|alma|oracle)
-                    sudo dnf makecache -q 2>/dev/null || sudo yum makecache -q 2>/dev/null || true
+                rhel|centos|rocky|alma)
+                    log_info "Installing for RHEL/CentOS..."
+                    sudo dnf install -y docker docker-compose java-17-openjdk unzip wget curl zenity 2>/dev/null || true
                     ;;
-                opensuse*|suse*|sles)
-                    sudo zypper --non-interactive refresh 2>/dev/null || true
-                    ;;
-                arch|manjaro|endeavouros|garuda|artix)
-                    sudo pacman -Sy --noconfirm 2>/dev/null || true
-                    ;;
-                alpine)
-                    sudo apk update 2>/dev/null || true
-                    ;;
-            esac
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.2: Install essential tools first
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Installing essential tools (wget, curl, unzip, ca-certificates)..."
-            case "$OS_ID" in
-                ubuntu|debian|linuxmint|pop|elementary|zorin|kali|parrot|mx)
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-                        wget curl unzip ca-certificates gnupg lsb-release \
-                        apt-transport-https software-properties-common 2>/dev/null || true
-                    ;;
-                fedora)
-                    sudo dnf install -y wget curl unzip ca-certificates gnupg2 2>/dev/null || true
-                    ;;
-                rhel|centos|rocky|alma|oracle)
-                    sudo dnf install -y wget curl unzip ca-certificates gnupg2 2>/dev/null || \
-                    sudo yum install -y wget curl unzip ca-certificates gnupg2 2>/dev/null || true
-                    # Enable EPEL for additional packages
-                    sudo dnf install -y epel-release 2>/dev/null || sudo yum install -y epel-release 2>/dev/null || true
-                    ;;
-                opensuse*|suse*|sles)
-                    sudo zypper --non-interactive install -y wget curl unzip ca-certificates gpg2 2>/dev/null || true
-                    ;;
-                arch|manjaro|endeavouros|garuda|artix)
-                    sudo pacman -S --noconfirm --needed wget curl unzip ca-certificates gnupg 2>/dev/null || true
-                    ;;
-                alpine)
-                    sudo apk add --no-cache wget curl unzip ca-certificates gnupg 2>/dev/null || true
-                    ;;
-                void)
-                    sudo xbps-install -y wget curl unzip ca-certificates gnupg 2>/dev/null || true
-                    ;;
-            esac
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.3: Install Docker
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Installing Docker..."
-            if ! command -v docker &> /dev/null; then
-                case "$OS_ID" in
-                    ubuntu|debian|linuxmint|pop|elementary|zorin)
-                        # Try official Docker repository first
-                        log_info "Setting up Docker official repository..."
-                        sudo mkdir -p /etc/apt/keyrings 2>/dev/null || true
-                        curl -fsSL https://download.docker.com/linux/$OS_ID/gpg 2>/dev/null | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg 2>/dev/null || true
-                        if [ -f /etc/apt/keyrings/docker.gpg ]; then
-                            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$OS_ID $(lsb_release -cs 2>/dev/null || echo stable) stable" | \
-                                sudo tee /etc/apt/sources.list.d/docker.list > /dev/null 2>/dev/null
-                            sudo apt-get update -qq 2>/dev/null || true
-                            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || true
-                        fi
-                        # Fallback to docker.io
-                        if ! command -v docker &> /dev/null; then
-                            log_info "Falling back to docker.io package..."
-                            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io 2>/dev/null || true
-                        fi
-                        ;;
-                    fedora)
-                        # Official Docker repo for Fedora
-                        sudo dnf -y install dnf-plugins-core 2>/dev/null || true
-                        sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo 2>/dev/null || true
-                        sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || \
-                        sudo dnf install -y docker 2>/dev/null || true
-                        ;;
-                    rhel|centos|rocky|alma|oracle)
-                        sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo 2>/dev/null || \
-                        sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo 2>/dev/null || true
-                        sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/dev/null || \
-                        sudo yum install -y docker-ce docker-ce-cli containerd.io 2>/dev/null || \
-                        sudo dnf install -y docker 2>/dev/null || \
-                        sudo yum install -y docker 2>/dev/null || true
-                        ;;
-                    opensuse*|suse*|sles)
-                        log_info "Installing Docker for openSUSE/SUSE..."
-                        sudo zypper --non-interactive install -y docker docker-compose 2>/dev/null || true
-                        # If docker-compose not found, try docker-compose-switch
-                        if ! command -v docker-compose &> /dev/null; then
-                            sudo zypper --non-interactive install -y docker-compose-switch 2>/dev/null || true
-                        fi
-                        ;;
-                    arch|manjaro|endeavouros|garuda|artix)
-                        sudo pacman -S --noconfirm --needed docker docker-compose 2>/dev/null || true
-                        ;;
-                    alpine)
-                        sudo apk add --no-cache docker docker-compose 2>/dev/null || true
-                        sudo rc-update add docker boot 2>/dev/null || true
-                        ;;
-                    void)
-                        sudo xbps-install -y docker docker-compose 2>/dev/null || true
-                        ;;
-                    gentoo)
-                        sudo emerge --ask=n app-containers/docker app-containers/docker-compose 2>/dev/null || true
-                        ;;
-                    *)
-                        log_warning "Unknown distro for Docker installation"
-                        # Try universal installation script
-                        log_info "Trying Docker's universal installation script..."
-                        curl -fsSL https://get.docker.com | sudo sh 2>/dev/null || true
-                        ;;
-                esac
-            else
-                log_success "Docker already installed"
-            fi
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.4: Install Docker Compose (if not included)
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Checking Docker Compose..."
-            if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null 2>&1; then
-                log_info "Installing Docker Compose..."
-                case "$OS_ID" in
-                    ubuntu|debian|linuxmint|pop|elementary|zorin|kali|parrot|mx)
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose 2>/dev/null || true
-                        ;;
-                    fedora|rhel|centos|rocky|alma|oracle)
-                        sudo dnf install -y docker-compose 2>/dev/null || sudo yum install -y docker-compose 2>/dev/null || true
-                        ;;
-                    opensuse*|suse*|sles)
-                        sudo zypper --non-interactive install -y docker-compose 2>/dev/null || true
-                        ;;
-                    arch|manjaro|endeavouros|garuda|artix)
-                        sudo pacman -S --noconfirm --needed docker-compose 2>/dev/null || true
-                        ;;
-                    *)
-                        # Download docker-compose binary directly
-                        log_info "Downloading Docker Compose binary..."
-                        local COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' 2>/dev/null || echo "v2.24.0")
-                        sudo curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose 2>/dev/null || true
-                        sudo chmod +x /usr/local/bin/docker-compose 2>/dev/null || true
-                        ;;
-                esac
-            else
-                log_success "Docker Compose already installed"
-            fi
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.5: Install Java 17
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Installing Java 17..."
-            if ! command -v java &> /dev/null || ! java -version 2>&1 | grep -q "17"; then
-                case "$OS_ID" in
-                    ubuntu|debian|linuxmint|pop|elementary|zorin|kali|parrot|mx)
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-17-jdk openjdk-17-jre 2>/dev/null || \
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-17-jdk-headless 2>/dev/null || \
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y default-jdk 2>/dev/null || true
-                        ;;
-                    fedora)
-                        sudo dnf install -y java-17-openjdk java-17-openjdk-devel 2>/dev/null || \
-                        sudo dnf install -y java-17-openjdk-headless 2>/dev/null || true
-                        ;;
-                    rhel|centos|rocky|alma|oracle)
-                        sudo dnf install -y java-17-openjdk java-17-openjdk-devel 2>/dev/null || \
-                        sudo yum install -y java-17-openjdk java-17-openjdk-devel 2>/dev/null || true
-                        ;;
-                    opensuse*|suse*|sles)
-                        sudo zypper --non-interactive install -y java-17-openjdk java-17-openjdk-devel 2>/dev/null || \
-                        sudo zypper --non-interactive install -y java-17-openjdk-headless 2>/dev/null || true
-                        ;;
-                    arch|manjaro|endeavouros|garuda|artix)
-                        sudo pacman -S --noconfirm --needed jdk17-openjdk jre17-openjdk 2>/dev/null || \
-                        sudo pacman -S --noconfirm --needed jdk-openjdk 2>/dev/null || true
-                        ;;
-                    alpine)
-                        sudo apk add --no-cache openjdk17 openjdk17-jre 2>/dev/null || true
-                        ;;
-                    void)
-                        sudo xbps-install -y openjdk17 2>/dev/null || true
-                        ;;
-                    gentoo)
-                        sudo emerge --ask=n dev-java/openjdk:17 2>/dev/null || true
-                        ;;
-                    *)
-                        log_warning "Unknown distro for Java installation"
-                        # Try SDKMAN as fallback
-                        if command -v sdk &> /dev/null; then
-                            sdk install java 17.0.9-tem 2>/dev/null || true
-                        fi
-                        ;;
-                esac
-            else
-                log_success "Java 17 already installed"
-            fi
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.6: Install GUI Tools (YAD, Zenity, Dialog)
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Installing GUI tools (YAD/Zenity/Dialog)..."
-            case "$OS_ID" in
-                ubuntu|debian|linuxmint|pop|elementary|zorin|kali|parrot|mx)
-                    # Try YAD first (better than Zenity)
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y yad 2>/dev/null || \
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y zenity 2>/dev/null || \
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y dialog 2>/dev/null || true
-                    ;;
-                fedora)
-                    sudo dnf install -y yad 2>/dev/null || \
-                    sudo dnf install -y zenity 2>/dev/null || \
-                    sudo dnf install -y dialog 2>/dev/null || true
-                    ;;
-                rhel|centos|rocky|alma|oracle)
-                    sudo dnf install -y zenity 2>/dev/null || \
-                    sudo yum install -y zenity 2>/dev/null || \
-                    sudo dnf install -y dialog 2>/dev/null || \
-                    sudo yum install -y dialog 2>/dev/null || true
-                    ;;
-                opensuse*|suse*|sles)
-                    sudo zypper --non-interactive install -y yad 2>/dev/null || \
-                    sudo zypper --non-interactive install -y zenity 2>/dev/null || \
-                    sudo zypper --non-interactive install -y dialog 2>/dev/null || true
-                    ;;
-                arch|manjaro|endeavouros|garuda|artix)
-                    sudo pacman -S --noconfirm --needed yad 2>/dev/null || \
-                    sudo pacman -S --noconfirm --needed zenity 2>/dev/null || \
-                    sudo pacman -S --noconfirm --needed dialog 2>/dev/null || true
-                    ;;
-                alpine)
-                    sudo apk add --no-cache zenity 2>/dev/null || \
-                    sudo apk add --no-cache dialog 2>/dev/null || true
-                    ;;
-                void)
-                    sudo xbps-install -y yad 2>/dev/null || \
-                    sudo xbps-install -y zenity 2>/dev/null || \
-                    sudo xbps-install -y dialog 2>/dev/null || true
+                arch|manjaro)
+                    log_info "Installing for Arch/Manjaro..."
+                    sudo pacman -S --noconfirm docker docker-compose jdk17-openjdk unzip wget curl yad 2>/dev/null || true
                     ;;
                 *)
-                    log_warning "Unknown distro for GUI tools"
+                    log_warning "Unknown Linux distribution: $OS_ID"
+                    log_info "Trying generic installation..."
                     ;;
             esac
+            
+            # Start Docker service
+            sudo systemctl enable docker 2>/dev/null || true
+            sudo systemctl start docker 2>/dev/null || true
 
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.7: Install Flatpak (for DBeaver and other apps)
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Installing Flatpak (for DBeaver support)..."
-            if ! command -v flatpak &> /dev/null; then
-                case "$OS_ID" in
-                    ubuntu|debian|linuxmint|pop|elementary|zorin|kali|parrot|mx)
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y flatpak 2>/dev/null || true
-                        # Add GNOME Software Flatpak plugin
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gnome-software-plugin-flatpak 2>/dev/null || true
-                        ;;
-                    fedora)
-                        # Flatpak is usually pre-installed on Fedora
-                        sudo dnf install -y flatpak 2>/dev/null || true
-                        ;;
-                    rhel|centos|rocky|alma|oracle)
-                        sudo dnf install -y flatpak 2>/dev/null || \
-                        sudo yum install -y flatpak 2>/dev/null || true
-                        ;;
-                    opensuse*|suse*|sles)
-                        sudo zypper --non-interactive install -y flatpak 2>/dev/null || true
-                        ;;
-                    arch|manjaro|endeavouros|garuda|artix)
-                        sudo pacman -S --noconfirm --needed flatpak 2>/dev/null || true
-                        ;;
-                    alpine)
-                        sudo apk add --no-cache flatpak 2>/dev/null || true
-                        ;;
-                    void)
-                        sudo xbps-install -y flatpak 2>/dev/null || true
-                        ;;
-                    gentoo)
-                        sudo emerge --ask=n sys-apps/flatpak 2>/dev/null || true
-                        ;;
-                esac
-            else
-                log_success "Flatpak already installed"
-            fi
-
-            # Add Flathub repository
-            if command -v flatpak &> /dev/null; then
-                log_info "Adding Flathub repository..."
-                flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || \
-                sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
-            fi
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.8: Install Snap (optional, for DBeaver fallback)
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Checking Snap support..."
-            case "$OS_ID" in
-                ubuntu|linuxmint|pop|elementary|zorin)
-                    # Snap is usually pre-installed on Ubuntu-based distros
-                    if ! command -v snap &> /dev/null; then
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y snapd 2>/dev/null || true
-                        sudo systemctl enable snapd.socket 2>/dev/null || true
-                        sudo systemctl start snapd.socket 2>/dev/null || true
-                    fi
-                    ;;
-                fedora)
-                    if ! command -v snap &> /dev/null; then
-                        sudo dnf install -y snapd 2>/dev/null || true
-                        sudo ln -sf /var/lib/snapd/snap /snap 2>/dev/null || true
-                        sudo systemctl enable snapd.socket 2>/dev/null || true
-                        sudo systemctl start snapd.socket 2>/dev/null || true
-                    fi
-                    ;;
-                # Note: Snap is not well supported on openSUSE, Arch, etc.
-            esac
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.9: Start and Enable Docker Service
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Starting Docker service..."
-            if command -v systemctl &> /dev/null; then
-                sudo systemctl enable docker.service 2>/dev/null || true
-                sudo systemctl enable containerd.service 2>/dev/null || true
-                sudo systemctl start docker.service 2>/dev/null || true
-                sudo systemctl start containerd.service 2>/dev/null || true
-            elif command -v rc-service &> /dev/null; then
-                # Alpine Linux / OpenRC
-                sudo rc-service docker start 2>/dev/null || true
-                sudo rc-update add docker default 2>/dev/null || true
-            elif command -v service &> /dev/null; then
-                # SysV init
-                sudo service docker start 2>/dev/null || true
-            fi
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.10: Add User to Docker Group
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Checking Docker group membership..."
-            if command -v docker &> /dev/null; then
-                # Create docker group if it doesn't exist
-                sudo groupadd docker 2>/dev/null || true
-                
-                # Check if user is in docker group
-                if ! groups "$USER" 2>/dev/null | grep -q '\bdocker\b'; then
-                    log_warning "Adding $USER to docker group..."
-                    sudo usermod -aG docker "$USER" 2>/dev/null || true
-                    
-                    # Try to apply group without logout
-                    if command -v newgrp &> /dev/null; then
-                        log_warning "You've been added to the docker group."
-                        log_warning "Please run one of these commands:"
-                        echo ""
-                        echo -e "  ${YELLOW}Option 1:${NC} ${WHITE}newgrp docker${NC}"
-                        echo -e "  ${YELLOW}Option 2:${NC} Log out and log back in"
-                        echo -e "  ${YELLOW}Option 3:${NC} ${WHITE}exec su -l \$USER${NC}"
-                        echo ""
-                        log_warning "Then run this script again: ${WHITE}bash $0${NC}"
-                        
-                        # Ask user what to do
-                        read -p "  Try to continue anyway? [y/N]: " continue_anyway
-                        if [[ ! $continue_anyway =~ ^[Yy]$ ]]; then
-                            log_info "Please run: newgrp docker && bash $0"
-                            exit 0
-                        fi
-                    fi
-                else
-                    log_success "User $USER is already in docker group"
-                fi
-            fi
-
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.11: Verify Docker is working
-            # ───────────────────────────────────────────────────────────────────
-            log_info "Verifying Docker installation..."
-            if command -v docker &> /dev/null; then
-                # Try running docker without sudo first
-                if docker info &> /dev/null 2>&1; then
-                    log_success "Docker is working correctly"
-                elif sudo docker info &> /dev/null 2>&1; then
-                    log_warning "Docker works with sudo only"
-                    log_info "You may need to log out and back in for group changes to take effect"
-                else
-                    log_error "Docker is installed but not working properly"
-                    log_info "Try: sudo systemctl restart docker"
-                fi
-            else
-                log_error "Docker installation failed!"
-                log_info "Please install Docker manually: https://docs.docker.com/engine/install/"
+            # Add user to docker group
+            if ! groups | grep -q docker; then
+                sudo usermod -aG docker "$USER"
+                log_warning "Added to docker group. Please run: newgrp docker && bash $0"
+                echo -e "${YELLOW}  Run: ${WHITE}newgrp docker && bash $0${NC}"
+                exit 0
             fi
             ;;
-
-        # ═══════════════════════════════════════════════════════════════════════
-        # macOS INSTALLATION
-        # ═══════════════════════════════════════════════════════════════════════
-        mac)
-            log_info "Detected macOS: $OS_VERSION ($ARCH)"
             
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.1: Install Homebrew
-            # ───────────────────────────────────────────────────────────────────
+        mac)
+            log_info "Installing for macOS..."
+            
+            # Check for Homebrew
             if ! command -v brew &> /dev/null; then
                 log_warning "Homebrew not found. Installing..."
                 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
-                
-                # Add Homebrew to PATH for Apple Silicon
-                if [[ "$ARCH" == "arm64" ]]; then
-                    echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile 2>/dev/null || true
-                    eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
-                else
-                    echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile 2>/dev/null || true
-                    eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null || true
-                fi
-            else
-                log_success "Homebrew already installed"
             fi
             
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.2: Install packages via Homebrew
-            # ───────────────────────────────────────────────────────────────────
             if command -v brew &> /dev/null; then
-                log_info "Installing packages via Homebrew..."
-                
-                # Update Homebrew
-                brew update 2>/dev/null || true
-                
-                # Install essential tools
-                brew install wget curl unzip 2>/dev/null || true
-                
-                # Install Java 17
-                log_info "Installing Java 17..."
-                brew install openjdk@17 2>/dev/null || true
-                # Create symlink for Java
-                sudo ln -sfn $(brew --prefix)/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk 2>/dev/null || true
-                
-                # Install dialog tool
+                brew install docker docker-compose openjdk@17 wget curl 2>/dev/null || true
+                # Install dialog tool for macOS
                 brew install dialog 2>/dev/null || true
-                
-                # Install Docker Desktop (if not installed)
-                if ! command -v docker &> /dev/null; then
-                    log_info "Installing Docker Desktop..."
-                    brew install --cask docker 2>/dev/null || true
-                fi
             fi
             
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.3: Check Docker Desktop
-            # ───────────────────────────────────────────────────────────────────
+            # Check Docker Desktop
             if ! command -v docker &> /dev/null; then
                 log_warning "Docker Desktop not found!"
-                log_info ""
-                log_info "Please install Docker Desktop from:"
-                log_info "  ${CYAN}https://www.docker.com/products/docker-desktop${NC}"
-                log_info ""
-                log_info "After installation:"
-                log_info "  1. Open Docker Desktop"
-                log_info "  2. Wait for it to start (whale icon in menu bar)"
-                log_info "  3. Run this script again"
-                log_info ""
-                
-                read -p "  Press Enter after installing Docker Desktop, or Ctrl+C to exit..."
-                
-                if ! command -v docker &> /dev/null; then
-                    log_error "Docker still not found. Please install Docker Desktop and try again."
-                    exit 1
-                fi
-            else
-                log_success "Docker Desktop is installed"
-                
-                # Check if Docker is running
-                if ! docker info &> /dev/null 2>&1; then
-                    log_warning "Docker Desktop is not running!"
-                    log_info "Starting Docker Desktop..."
-                    open -a Docker 2>/dev/null || true
-                    
-                    log_info "Waiting for Docker to start (up to 60 seconds)..."
-                    local docker_wait=0
-                    while ! docker info &> /dev/null 2>&1 && [ $docker_wait -lt 60 ]; do
-                        sleep 2
-                        docker_wait=$((docker_wait + 2))
-                        echo -ne "\r  Waiting... ${docker_wait}s "
-                    done
-                    echo ""
-                    
-                    if docker info &> /dev/null 2>&1; then
-                        log_success "Docker Desktop is now running"
-                    else
-                        log_error "Docker Desktop failed to start. Please start it manually."
-                        exit 1
-                    fi
-                else
-                    log_success "Docker Desktop is running"
-                fi
+                log_info "Please install Docker Desktop from: https://www.docker.com/products/docker-desktop"
+                log_info "After installation, run this script again."
+                exit 1
             fi
             ;;
-
-        # ═══════════════════════════════════════════════════════════════════════
-        # WINDOWS (WSL) INSTALLATION
-        # ═══════════════════════════════════════════════════════════════════════
+            
         windows)
-            log_info "Detected Windows (WSL)"
+            log_info "Detected Windows (WSL)..."
             
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.1: Check WSL distribution
-            # ───────────────────────────────────────────────────────────────────
-            local WSL_DISTRO=""
-            if [ -f /etc/os-release ]; then
-                . /etc/os-release
-                WSL_DISTRO="$ID"
-                log_info "WSL Distribution: $WSL_DISTRO"
+            # WSL uses apt-get
+            if command -v apt-get &> /dev/null; then
+                sudo apt-get update -qq
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose openjdk-17-jdk unzip wget curl zenity 2>/dev/null || true
             fi
             
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.2: Install packages based on WSL distro
-            # ───────────────────────────────────────────────────────────────────
-            case "$WSL_DISTRO" in
-                ubuntu|debian)
-                    log_info "Installing packages for Ubuntu/Debian WSL..."
-                    sudo apt-get update -qq 2>/dev/null || true
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-                        docker.io docker-compose openjdk-17-jdk openjdk-17-jre \
-                        unzip wget curl ca-certificates \
-                        zenity dialog 2>/dev/null || true
-                    ;;
-                fedora)
-                    log_info "Installing packages for Fedora WSL..."
-                    sudo dnf install -y \
-                        docker docker-compose java-17-openjdk \
-                        unzip wget curl ca-certificates \
-                        zenity dialog 2>/dev/null || true
-                    ;;
-                opensuse*|suse*)
-                    log_info "Installing packages for openSUSE WSL..."
-                    sudo zypper --non-interactive install -y \
-                        docker docker-compose java-17-openjdk \
-                        unzip wget curl ca-certificates \
-                        zenity dialog 2>/dev/null || true
-                    ;;
-                *)
-                    log_warning "Unknown WSL distribution: $WSL_DISTRO"
-                    # Try apt-get as fallback
-                    if command -v apt-get &> /dev/null; then
-                        sudo apt-get update -qq 2>/dev/null || true
-                        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-                            docker.io docker-compose openjdk-17-jdk \
-                            unzip wget curl zenity 2>/dev/null || true
-                    fi
-                    ;;
-            esac
-            
-            # ───────────────────────────────────────────────────────────────────
-            # STEP 3.3: Docker Desktop for Windows notice
-            # ───────────────────────────────────────────────────────────────────
-            log_info ""
-            log_info "═══════════════════════════════════════════════════════════════════"
-            log_info "  IMPORTANT: Docker Desktop for Windows"
-            log_info "═══════════════════════════════════════════════════════════════════"
-            log_info ""
-            log_info "  For best results, please ensure:"
-            log_info ""
-            log_info "  1. Docker Desktop for Windows is installed"
-            log_info "     Download: https://www.docker.com/products/docker-desktop"
-            log_info ""
-            log_info "  2. WSL 2 integration is enabled in Docker Desktop:"
-            log_info "     Settings → Resources → WSL Integration → Enable"
-            log_info ""
-            log_info "  3. Your WSL distro is selected in Docker Desktop"
-            log_info ""
-            log_info "═══════════════════════════════════════════════════════════════════"
-            log_info ""
-            
-            # Check if Docker is accessible
-            if ! command -v docker &> /dev/null; then
-                log_warning "Docker command not found in WSL"
-                log_info "Please install Docker Desktop for Windows and enable WSL integration"
-            elif ! docker info &> /dev/null 2>&1; then
-                log_warning "Docker is installed but not accessible"
-                log_info "Please ensure Docker Desktop is running and WSL integration is enabled"
-            else
-                log_success "Docker is accessible from WSL"
-            fi
-            ;;
-
-        # ═══════════════════════════════════════════════════════════════════════
-        # UNKNOWN OS
-        # ═══════════════════════════════════════════════════════════════════════
-        *)
-            log_error "Unknown operating system: $OS_TYPE"
-            log_info "This script supports:"
-            log_info "  - Linux (Ubuntu, Debian, Fedora, CentOS, RHEL, openSUSE, Arch, etc.)"
-            log_info "  - macOS (Intel and Apple Silicon)"
-            log_info "  - Windows (WSL)"
-            exit 1
+            log_info "Make sure Docker Desktop for Windows is installed and WSL integration is enabled"
             ;;
     esac
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # FINAL: Detect GUI tool
-    # ═══════════════════════════════════════════════════════════════════════════
-    log_info "Detecting GUI tool..."
+    # Detect GUI tool after installation
     detect_gui_tool
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    # FINAL: Summary
-    # ═══════════════════════════════════════════════════════════════════════════
-    echo ""
-    log_info "───────────────────────────────────────────────────────────────────"
-    log_info "  Prerequisites Installation Summary"
-    log_info "───────────────────────────────────────────────────────────────────"
-    
-    # Check each component
-    if command -v docker &> /dev/null; then
-        local docker_version=$(docker --version 2>/dev/null | cut -d' ' -f3 | tr -d ',')
-        log_success "Docker:         $docker_version"
-    else
-        log_error "Docker:         NOT INSTALLED"
-    fi
-    
-    if command -v docker-compose &> /dev/null || docker compose version &> /dev/null 2>&1; then
-        local compose_version=$(docker-compose --version 2>/dev/null | cut -d' ' -f4 | tr -d ',' || docker compose version 2>/dev/null | cut -d' ' -f4)
-        log_success "Docker Compose: $compose_version"
-    else
-        log_error "Docker Compose: NOT INSTALLED"
-    fi
-    
-    if command -v java &> /dev/null; then
-        local java_version=$(java -version 2>&1 | head -n1 | cut -d'"' -f2)
-        log_success "Java:           $java_version"
-    else
-        log_error "Java:           NOT INSTALLED"
-    fi
-    
-    if command -v yad &> /dev/null; then
-        log_success "GUI Tool:       YAD (Modern)"
-    elif command -v zenity &> /dev/null; then
-        log_success "GUI Tool:       Zenity"
-    elif command -v dialog &> /dev/null; then
-        log_success "GUI Tool:       Dialog"
-    else
-        log_warning "GUI Tool:       None (terminal mode only)"
-    fi
-    
-    if command -v flatpak &> /dev/null; then
-        log_success "Flatpak:        Installed (for DBeaver)"
-    else
-        log_warning "Flatpak:        Not installed"
-    fi
-    
-    log_info "───────────────────────────────────────────────────────────────────"
-    echo ""
-    
-    log_success "Dependencies installation completed!"
+    log_success "Dependencies ready"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
