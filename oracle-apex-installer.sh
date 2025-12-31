@@ -2542,76 +2542,176 @@ step_30_install_dbeaver() {
     log_info "Installing DBeaver..."
     local DBEAVER_INSTALLED=false
 
-    # Method 1: Flatpak (works on ALL distros)
-    if command -v flatpak &> /dev/null || [ "$OS_ID" != "" ]; then
-        log_info "Method 1: Installing via Flatpak..."
+    # ═══════════════════════════════════════════════════════════════
+    # Method 1: Flatpak (works on ALL distros) - WITH SUDO
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Method 1: Installing via Flatpak (system-wide)..."
+    
+    # First, ensure Flatpak is installed
+    if ! command -v flatpak &> /dev/null; then
+        log_info "Installing Flatpak first..."
+        case "$OS_ID" in
+            ubuntu|debian|linuxmint|pop|elementary|zorin)
+                sudo apt-get update -qq
+                sudo apt-get install -y flatpak
+                ;;
+            fedora)
+                sudo dnf install -y flatpak
+                ;;
+            opensuse*|suse*|sles)
+                sudo zypper --non-interactive install flatpak
+                ;;
+            arch|manjaro|endeavouros)
+                sudo pacman -S --noconfirm flatpak
+                ;;
+            rhel|centos|rocky|alma)
+                sudo dnf install -y flatpak || sudo yum install -y flatpak
+                ;;
+        esac
+    fi
+    
+    # Add Flathub repository
+    if command -v flatpak &> /dev/null; then
+        log_info "Adding Flathub repository..."
+        sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
         
-        # Install flatpak if not present
-        if ! command -v flatpak &> /dev/null; then
-            case "$OS_ID" in
-                ubuntu|debian|linuxmint|pop) sudo apt-get install -y flatpak 2>/dev/null ;;
-                fedora) sudo dnf install -y flatpak 2>/dev/null ;;
-                opensuse*|suse*) sudo zypper --non-interactive install flatpak 2>/dev/null ;;
-                arch|manjaro) sudo pacman -S --noconfirm flatpak 2>/dev/null ;;
-            esac
-        fi
-        
-        if command -v flatpak &> /dev/null; then
-            flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || \
-            sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
-            
-            if flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>/dev/null || \
-               sudo flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>/dev/null; then
-                log_success "DBeaver installed via Flatpak!"
+        # Install DBeaver with sudo (system-wide)
+        log_info "Installing DBeaver (this may take a few minutes)..."
+        if sudo flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>&1 | tee -a "$LOG_DIR/dbeaver_install.log"; then
+            # Verify installation
+            if flatpak list 2>/dev/null | grep -qi "dbeaver"; then
+                log_success "✅ DBeaver installed via Flatpak!"
                 DBEAVER_INSTALLED=true
             fi
         fi
     fi
 
+    # ═══════════════════════════════════════════════════════════════
     # Method 2: Native package if Flatpak failed
+    # ═══════════════════════════════════════════════════════════════
     if [ "$DBEAVER_INSTALLED" = false ]; then
-        log_info "Method 2: Trying native package..."
+        log_warning "Flatpak installation failed. Trying native package..."
+        
         case "$OS_ID" in
-            ubuntu|debian|linuxmint|pop)
-                wget -q -O /tmp/dbeaver.deb "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" && \
-                sudo dpkg -i /tmp/dbeaver.deb 2>/dev/null && sudo apt-get install -f -y 2>/dev/null && \
-                DBEAVER_INSTALLED=true && rm -f /tmp/dbeaver.deb
+            ubuntu|debian|linuxmint|pop|elementary|zorin)
+                log_info "Downloading DBeaver .deb package..."
+                wget -q --show-progress -O /tmp/dbeaver.deb "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" && \
+                sudo dpkg -i /tmp/dbeaver.deb 2>/dev/null
+                sudo apt-get install -f -y 2>/dev/null
+                rm -f /tmp/dbeaver.deb
+                command -v dbeaver-ce &>/dev/null && DBEAVER_INSTALLED=true
                 ;;
+                
             fedora|rhel|centos|rocky|alma)
-                wget -q -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" && \
-                sudo dnf install -y /tmp/dbeaver.rpm 2>/dev/null && \
-                DBEAVER_INSTALLED=true && rm -f /tmp/dbeaver.rpm
+                log_info "Downloading DBeaver .rpm package..."
+                wget -q --show-progress -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" && \
+                sudo dnf install -y /tmp/dbeaver.rpm 2>/dev/null || sudo yum install -y /tmp/dbeaver.rpm 2>/dev/null
+                rm -f /tmp/dbeaver.rpm
+                command -v dbeaver-ce &>/dev/null && DBEAVER_INSTALLED=true
                 ;;
-            opensuse*|suse*)
-                wget -q -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" && \
-                sudo zypper --non-interactive install /tmp/dbeaver.rpm 2>/dev/null && \
-                DBEAVER_INSTALLED=true && rm -f /tmp/dbeaver.rpm
+                
+            opensuse*|suse*|sles)
+                log_info "Downloading DBeaver .rpm package..."
+                wget -q --show-progress -O /tmp/dbeaver.rpm "https://dbeaver.io/files/dbeaver-ce-latest-stable.x86_64.rpm" && \
+                sudo zypper --non-interactive install --allow-unsigned-rpm /tmp/dbeaver.rpm 2>/dev/null
+                rm -f /tmp/dbeaver.rpm
+                command -v dbeaver-ce &>/dev/null && DBEAVER_INSTALLED=true
                 ;;
-            arch|manjaro)
-                sudo pacman -S --noconfirm dbeaver 2>/dev/null && DBEAVER_INSTALLED=true
+                
+            arch|manjaro|endeavouros)
+                log_info "Installing via pacman/yay..."
+                sudo pacman -S --noconfirm dbeaver 2>/dev/null || \
+                yay -S --noconfirm dbeaver-ce-bin 2>/dev/null
+                command -v dbeaver &>/dev/null && DBEAVER_INSTALLED=true
                 ;;
         esac
     fi
 
-    # Verify
-    if command -v dbeaver-ce &>/dev/null || command -v dbeaver &>/dev/null || \
-       flatpak list 2>/dev/null | grep -qi dbeaver; then
-        log_success "✅ DBeaver is installed and ready!"
-    else
-        log_warning "DBeaver may need manual install from: https://dbeaver.io"
+    # ═══════════════════════════════════════════════════════════════
+    # Method 3: Snap as last resort
+    # ═══════════════════════════════════════════════════════════════
+    if [ "$DBEAVER_INSTALLED" = false ] && command -v snap &> /dev/null; then
+        log_info "Trying Snap installation..."
+        sudo snap install dbeaver-ce 2>/dev/null && DBEAVER_INSTALLED=true
     fi
 
-    # Create launcher script
-    cat > "$SCRIPTS_DIR/open-dbeaver.sh" << 'DBLAUNCH'
+    # ═══════════════════════════════════════════════════════════════
+    # Final verification and launcher creation
+    # ═══════════════════════════════════════════════════════════════
+    echo ""
+    log_info "Verifying DBeaver installation..."
+    
+    if flatpak list 2>/dev/null | grep -qi "dbeaver"; then
+        log_success "✅ DBeaver is installed (Flatpak)"
+        DBEAVER_INSTALLED=true
+    elif command -v dbeaver-ce &>/dev/null; then
+        log_success "✅ DBeaver is installed (Native: $(which dbeaver-ce))"
+        DBEAVER_INSTALLED=true
+    elif command -v dbeaver &>/dev/null; then
+        log_success "✅ DBeaver is installed (Native: $(which dbeaver))"
+        DBEAVER_INSTALLED=true
+    elif snap list 2>/dev/null | grep -qi "dbeaver"; then
+        log_success "✅ DBeaver is installed (Snap)"
+        DBEAVER_INSTALLED=true
+    fi
+
+    if [ "$DBEAVER_INSTALLED" = false ]; then
+        log_error "❌ DBeaver installation failed!"
+        log_info "Please install manually:"
+        log_info "  sudo flatpak install flathub io.dbeaver.DBeaverCommunity"
+        log_info "  Or download from: https://dbeaver.io/download/"
+    fi
+
+    # Create launcher script (always create it)
+    log_info "Creating DBeaver launcher script..."
+    cat > "$SCRIPTS_DIR/open-dbeaver.sh" << 'DBLAUNCHEREOF'
 #!/bin/bash
-if command -v dbeaver-ce &>/dev/null; then dbeaver-ce &
-elif command -v dbeaver &>/dev/null; then dbeaver &
-elif flatpak list 2>/dev/null | grep -qi dbeaver; then flatpak run io.dbeaver.DBeaverCommunity &
-elif snap list 2>/dev/null | grep -qi dbeaver; then snap run dbeaver-ce &
-else echo "DBeaver not found! Install from: https://dbeaver.io"; exit 1; fi
-DBLAUNCH
+# DBeaver Launcher - KaizenixCore
+echo "🔍 Looking for DBeaver..."
+
+# Method 1: Flatpak
+if command -v flatpak &> /dev/null; then
+    if flatpak list 2>/dev/null | grep -qi "io.dbeaver.DBeaverCommunity"; then
+        echo "✅ Starting DBeaver via Flatpak..."
+        flatpak run io.dbeaver.DBeaverCommunity &
+        exit 0
+    fi
+fi
+
+# Method 2: Native commands
+if command -v dbeaver-ce &> /dev/null; then
+    echo "✅ Starting dbeaver-ce..."
+    dbeaver-ce &
+    exit 0
+fi
+
+if command -v dbeaver &> /dev/null; then
+    echo "✅ Starting dbeaver..."
+    dbeaver &
+    exit 0
+fi
+
+# Method 3: Snap
+if command -v snap &> /dev/null; then
+    if snap list 2>/dev/null | grep -qi dbeaver; then
+        echo "✅ Starting DBeaver via Snap..."
+        snap run dbeaver-ce &
+        exit 0
+    fi
+fi
+
+# Not found
+echo ""
+echo "❌ DBeaver not installed!"
+echo ""
+echo "Install with one of these commands:"
+echo "  sudo flatpak install flathub io.dbeaver.DBeaverCommunity"
+echo "  Or download from: https://dbeaver.io/download/"
+exit 1
+DBLAUNCHEREOF
+
     chmod +x "$SCRIPTS_DIR/open-dbeaver.sh"
-    log_success "DBeaver launcher created"
+    log_success "DBeaver launcher script created: $SCRIPTS_DIR/open-dbeaver.sh"
 }
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 31: FINAL SUMMARY
