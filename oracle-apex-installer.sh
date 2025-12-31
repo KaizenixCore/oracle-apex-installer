@@ -2691,11 +2691,316 @@ step_31_final_summary() {
     log_success "🎉 Installation completed! Enjoy Oracle APEX!"
     echo ""
 }
+# ═══════════════════════════════════════════════════════════════════════════════
+# UNINSTALL FUNCTION - Complete System Cleanup
+# ═══════════════════════════════════════════════════════════════════════════════
+uninstall_everything() {
+    clear
+    echo ""
+    echo -e "${RED}${BOLD}"
+    echo "  ╔═══════════════════════════════════════════════════════════════════╗"
+    echo "  ║                                                                   ║"
+    echo "  ║           ⚠️  COMPLETE UNINSTALL - حذف کامل  ⚠️                   ║"
+    echo "  ║                                                                   ║"
+    echo "  ╠═══════════════════════════════════════════════════════════════════╣"
+    echo "  ║  This will remove:                                                ║"
+    echo "  ║    • Oracle APEX Database Container                               ║"
+    echo "  ║    • ORDS (Oracle REST Data Services)                             ║"
+    echo "  ║    • All configuration files                                      ║"
+    echo "  ║    • All downloaded files                                         ║"
+    echo "  ║    • Systemd services                                             ║"
+    echo "  ║    • Desktop shortcuts                                            ║"
+    echo "  ║    • DBeaver (if installed via this script)                       ║"
+    echo "  ║                                                                   ║"
+    echo "  ╚═══════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    echo ""
+    
+    read -p "  Are you sure you want to COMPLETELY UNINSTALL? [y/N]: " confirm
+    if [[ ! $confirm =~ ^[Yy]$ ]]; then
+        echo ""
+        log_info "Uninstall cancelled."
+        exit 0
+    fi
+    
+    echo ""
+    read -p "  Type 'DELETE' to confirm: " confirm_delete
+    if [ "$confirm_delete" != "DELETE" ]; then
+        echo ""
+        log_info "Uninstall cancelled. You must type DELETE to confirm."
+        exit 0
+    fi
+    
+    echo ""
+    log_step "Starting Complete Uninstall..."
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 1: Stop all services
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 1/8: Stopping all services..."
+    
+    # Stop ORDS process
+    pkill -9 -f "ords" 2>/dev/null || true
+    sleep 3
+    
+    # Stop systemd services
+    if command -v systemctl &> /dev/null; then
+        sudo systemctl stop oracle-apex-ords.service 2>/dev/null || true
+        sudo systemctl stop oracle-apex-db.service 2>/dev/null || true
+        sudo systemctl disable oracle-apex-ords.service 2>/dev/null || true
+        sudo systemctl disable oracle-apex-db.service 2>/dev/null || true
+    fi
+    
+    log_success "Services stopped"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 2: Remove Docker container and volume
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 2/8: Removing Docker container and data..."
+    
+    docker stop oracle-apex-db 2>/dev/null || true
+    docker rm -f oracle-apex-db 2>/dev/null || true
+    docker volume rm oracle-apex-complete_oracle-data 2>/dev/null || true
+    docker volume rm oracle-data 2>/dev/null || true
+    
+    # Remove any orphan volumes related to this project
+    docker volume ls -q 2>/dev/null | grep -i "oracle\|apex" | xargs -r docker volume rm 2>/dev/null || true
+    
+    log_success "Docker container and volumes removed"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 3: Remove systemd service files
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 3/8: Removing systemd services..."
+    
+    if command -v systemctl &> /dev/null; then
+        sudo rm -f /etc/systemd/system/oracle-apex-db.service 2>/dev/null || true
+        sudo rm -f /etc/systemd/system/oracle-apex-ords.service 2>/dev/null || true
+        sudo systemctl daemon-reload 2>/dev/null || true
+    fi
+    
+    log_success "Systemd services removed"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 4: Remove project directory
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 4/8: Removing project directory..."
+    
+    rm -rf "$HOME/oracle-apex-complete" 2>/dev/null || true
+    rm -rf "$HOME/oracle-apex" 2>/dev/null || true
+    
+    log_success "Project directory removed"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 5: Remove desktop shortcuts and icons
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 5/8: Removing desktop shortcuts..."
+    
+    rm -f "$HOME/.local/share/applications/oracle-apex.desktop" 2>/dev/null || true
+    rm -f "$HOME/.local/share/icons/oracle-apex-icon.svg" 2>/dev/null || true
+    rm -f "$HOME/Desktop/oracle-apex.desktop" 2>/dev/null || true
+    
+    # Update desktop database
+    update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
+    
+    log_success "Desktop shortcuts removed"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 6: Remove DBeaver (if installed via Flatpak)
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 6/8: Checking DBeaver..."
+    
+    read -p "  Also remove DBeaver? [y/N]: " remove_dbeaver
+    if [[ $remove_dbeaver =~ ^[Yy]$ ]]; then
+        log_info "Removing DBeaver..."
+        
+        # Flatpak
+        flatpak uninstall --user io.dbeaver.DBeaverCommunity -y 2>/dev/null || true
+        sudo flatpak uninstall io.dbeaver.DBeaverCommunity -y 2>/dev/null || true
+        rm -rf "$HOME/.var/app/io.dbeaver.DBeaverCommunity" 2>/dev/null || true
+        
+        # Snap
+        sudo snap remove dbeaver-ce 2>/dev/null || true
+        
+        # Native packages
+        case "$OS_ID" in
+            ubuntu|debian|linuxmint|pop)
+                sudo apt-get remove -y dbeaver dbeaver-ce 2>/dev/null || true
+                ;;
+            fedora|rhel|centos|rocky|alma)
+                sudo dnf remove -y dbeaver dbeaver-ce 2>/dev/null || true
+                ;;
+            opensuse*|suse*)
+                sudo zypper remove -y dbeaver dbeaver-ce 2>/dev/null || true
+                ;;
+            arch|manjaro)
+                sudo pacman -Rns --noconfirm dbeaver 2>/dev/null || true
+                ;;
+        esac
+        
+        # Remove DBeaver config
+        rm -rf "$HOME/.dbeaver" 2>/dev/null || true
+        rm -rf "$HOME/.dbeaver4" 2>/dev/null || true
+        rm -rf "$HOME/.local/share/DBeaverData" 2>/dev/null || true
+        rm -rf "$HOME/.config/dbeaver" 2>/dev/null || true
+        
+        log_success "DBeaver removed"
+    else
+        log_info "DBeaver kept"
+    fi
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 7: Clean up temporary files
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 7/8: Cleaning temporary files..."
+    
+    rm -f /tmp/apex*.zip 2>/dev/null || true
+    rm -f /tmp/ords*.zip 2>/dev/null || true
+    rm -f /tmp/oracle-apex-*.service 2>/dev/null || true
+    rm -f /tmp/dbeaver.* 2>/dev/null || true
+    rm -f "$HOME/fix-oracle-apex-issues.sh" 2>/dev/null || true
+    rm -f "$HOME/remove-dbeaver-completely.sh" 2>/dev/null || true
+    
+    log_success "Temporary files cleaned"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 8: Final verification
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 8/8: Final verification..."
+    
+    local all_clean=true
+    
+    # Check Docker container
+    if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "oracle-apex-db"; then
+        log_warning "Docker container still exists"
+        all_clean=false
+    fi
+    
+    # Check project directory
+    if [ -d "$HOME/oracle-apex-complete" ]; then
+        log_warning "Project directory still exists"
+        all_clean=false
+    fi
+    
+    # Check systemd services
+    if [ -f "/etc/systemd/system/oracle-apex-db.service" ]; then
+        log_warning "Systemd service file still exists"
+        all_clean=false
+    fi
+    
+    if [ "$all_clean" = true ]; then
+        echo ""
+        echo -e "${GREEN}${BOLD}"
+        echo "  ╔═══════════════════════════════════════════════════════════════════╗"
+        echo "  ║                                                                   ║"
+        echo "  ║           ✅ UNINSTALL COMPLETED SUCCESSFULLY! ✅                 ║"
+        echo "  ║                                                                   ║"
+        echo "  ╠═══════════════════════════════════════════════════════════════════╣"
+        echo "  ║                                                                   ║"
+        echo "  ║  All Oracle APEX components have been removed.                    ║"
+        echo "  ║                                                                   ║"
+        echo "  ║  To reinstall, run:                                               ║"
+        echo "  ║    bash oracle-apex-installer.sh                                  ║"
+        echo "  ║                                                                   ║"
+        echo "  ╚═══════════════════════════════════════════════════════════════════╝"
+        echo -e "${NC}"
+    else
+        echo ""
+        echo -e "${YELLOW}${BOLD}"
+        echo "  ╔═══════════════════════════════════════════════════════════════════╗"
+        echo "  ║                                                                   ║"
+        echo "  ║           ⚠️  UNINSTALL COMPLETED WITH WARNINGS ⚠️                ║"
+        echo "  ║                                                                   ║"
+        echo "  ║  Some components may not have been fully removed.                 ║"
+        echo "  ║  Please check the warnings above.                                 ║"
+        echo "  ║                                                                   ║"
+        echo "  ╚═══════════════════════════════════════════════════════════════════╝"
+        echo -e "${NC}"
+    fi
+    
+    echo ""
+    exit 0
+}
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SHOW MENU - Installation Options
+# ═══════════════════════════════════════════════════════════════════════════════
+show_menu() {
+    clear
+    print_banner
+    
+    echo ""
+    echo -e "${CYAN}${BOLD}  ┌─────────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}${BOLD}  │${NC}                   ${WHITE}${BOLD}SELECT AN OPTION${NC}                            ${CYAN}${BOLD}│${NC}"
+    echo -e "${CYAN}${BOLD}  └─────────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
+    echo -e "  ${GREEN}1)${NC} ${WHITE}Install Oracle APEX${NC} - Fresh installation"
+    echo -e "  ${YELLOW}2)${NC} ${WHITE}Repair Installation${NC} - Fix existing installation"
+    echo -e "  ${RED}3)${NC} ${WHITE}Uninstall Everything${NC} - Complete removal"
+    echo -e "  ${GRAY}4)${NC} ${WHITE}Exit${NC}"
+    echo ""
+    
+    read -p "  Enter your choice [1-4]: " menu_choice
+    
+    case $menu_choice in
+        1)
+            log_info "Starting fresh installation..."
+            return 0  # Continue with installation
+            ;;
+        2)
+            log_info "Starting repair..."
+            if [ -f "$HOME/oracle-apex-complete/scripts/fix.sh" ]; then
+                bash "$HOME/oracle-apex-complete/scripts/fix.sh"
+                exit 0
+            else
+                log_error "No existing installation found. Please install first."
+                exit 1
+            fi
+            ;;
+        3)
+            detect_os
+            uninstall_everything
+            ;;
+        4)
+            log_info "Goodbye!"
+            exit 0
+            ;;
+        *)
+            log_error "Invalid option. Please enter 1-4."
+            sleep 2
+            show_menu
+            ;;
+    esac
+}
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN FUNCTION
 # ═══════════════════════════════════════════════════════════════════════════════
 main() {
+    # Check for command line arguments
+    if [ "$1" = "--uninstall" ] || [ "$1" = "-u" ]; then
+        detect_os
+        uninstall_everything
+        exit 0
+    fi
+    
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        echo ""
+        echo "Oracle APEX Ultimate Installer v${VERSION}"
+        echo ""
+        echo "Usage:"
+        echo "  bash oracle-apex-installer.sh           # Show menu"
+        echo "  bash oracle-apex-installer.sh --install # Direct install"
+        echo "  bash oracle-apex-installer.sh --uninstall # Uninstall everything"
+        echo "  bash oracle-apex-installer.sh --help    # Show this help"
+        echo ""
+        exit 0
+    fi
+    
+    # Show menu if no direct install flag
+    if [ "$1" != "--install" ] && [ "$1" != "-i" ]; then
+        show_menu
+    fi
+    
     # Initial setup
     print_banner
     detect_os
@@ -2739,4 +3044,4 @@ main() {
 # ═══════════════════════════════════════════════════════════════════════════════
 # RUN MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
-main "$@"
+main "$@"       
