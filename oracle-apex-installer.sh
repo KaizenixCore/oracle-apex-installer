@@ -627,15 +627,14 @@ step_03_prerequisites() {
     log_success "Dependencies ready"
 }
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 04: CLEANUP
+# STEP 04: CLEANUP (NO EXTRA QUESTIONS)
 # ═══════════════════════════════════════════════════════════════════════════════
 step_04_cleanup() {
     log_step "Cleanup Previous Installation"
 
-    read -p "  Clean old installation? [Y/n]: " confirm
-    [[ $confirm =~ ^[Nn]$ ]] && { log_info "Skipped"; return; }
-
-    log_info "Cleaning..."
+    # Auto-cleanup without asking (user already chose "Install" from menu)
+    log_info "Cleaning previous installation (if any)..."
+    
     pkill -9 -f "ords" 2>/dev/null || true
     docker stop oracle-apex-db 2>/dev/null || true
     docker rm -f oracle-apex-db 2>/dev/null || true
@@ -657,9 +656,8 @@ step_04_cleanup() {
         chmod 600 "$PROJECT_DIR/.apex_password"
     fi
     
-    log_success "Cleanup completed (password files preserved)"
+    log_success "Cleanup completed"
 }
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 05: DOWNLOAD
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2531,7 +2529,7 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 30: INSTALL DBEAVER (CROSS-PLATFORM) - THIS WAS MISSING!
+# STEP 30: INSTALL DBEAVER (CROSS-PLATFORM) - FIXED VERSION
 # ═══════════════════════════════════════════════════════════════════════════════
 step_30_install_dbeaver() {
     log_step "Installing DBeaver (Cross-Platform - GUARANTEED)"
@@ -2570,18 +2568,32 @@ step_30_install_dbeaver() {
         esac
     fi
     
-    # Add Flathub repository
+    # Add Flathub repository (BOTH user and system)
     if command -v flatpak &> /dev/null; then
         log_info "Adding Flathub repository..."
+        flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
         sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
         
-        # Install DBeaver with sudo (system-wide)
-        log_info "Installing DBeaver (this may take a few minutes)..."
-        if sudo flatpak install -y flathub io.dbeaver.DBeaverCommunity 2>&1 | tee -a "$LOG_DIR/dbeaver_install.log"; then
-            # Verify installation
+        # Install DBeaver with sudo (system-wide) - FORCE YES
+        log_info "Installing DBeaver (this may take 2-5 minutes)..."
+        log_info "Please wait..."
+        
+        # Try system-wide first
+        if sudo flatpak install -y --noninteractive flathub io.dbeaver.DBeaverCommunity 2>&1 | tee -a "$LOG_DIR/dbeaver_install.log"; then
             if flatpak list 2>/dev/null | grep -qi "dbeaver"; then
-                log_success "✅ DBeaver installed via Flatpak!"
+                log_success "✅ DBeaver installed via Flatpak (system)!"
                 DBEAVER_INSTALLED=true
+            fi
+        fi
+        
+        # If system failed, try user install
+        if [ "$DBEAVER_INSTALLED" = false ]; then
+            log_info "Trying user-level Flatpak install..."
+            if flatpak install --user -y --noninteractive flathub io.dbeaver.DBeaverCommunity 2>&1 | tee -a "$LOG_DIR/dbeaver_install.log"; then
+                if flatpak list 2>/dev/null | grep -qi "dbeaver"; then
+                    log_success "✅ DBeaver installed via Flatpak (user)!"
+                    DBEAVER_INSTALLED=true
+                fi
             fi
         fi
     fi
@@ -2636,11 +2648,13 @@ step_30_install_dbeaver() {
     fi
 
     # ═══════════════════════════════════════════════════════════════
-    # Final verification and launcher creation
+    # Final verification
     # ═══════════════════════════════════════════════════════════════
     echo ""
     log_info "Verifying DBeaver installation..."
+    sleep 2
     
+    # Check all possible installations
     if flatpak list 2>/dev/null | grep -qi "dbeaver"; then
         log_success "✅ DBeaver is installed (Flatpak)"
         DBEAVER_INSTALLED=true
@@ -2657,9 +2671,11 @@ step_30_install_dbeaver() {
 
     if [ "$DBEAVER_INSTALLED" = false ]; then
         log_error "❌ DBeaver installation failed!"
-        log_info "Please install manually:"
-        log_info "  sudo flatpak install flathub io.dbeaver.DBeaverCommunity"
+        log_info "Please install manually after script completes:"
+        log_info "  sudo flatpak install -y flathub io.dbeaver.DBeaverCommunity"
         log_info "  Or download from: https://dbeaver.io/download/"
+    else
+        log_success "✅ DBeaver installation verified!"
     fi
 
     # Create launcher script (always create it)
@@ -2669,11 +2685,12 @@ step_30_install_dbeaver() {
 # DBeaver Launcher - KaizenixCore
 echo "🔍 Looking for DBeaver..."
 
-# Method 1: Flatpak
+# Method 1: Flatpak (most reliable)
 if command -v flatpak &> /dev/null; then
     if flatpak list 2>/dev/null | grep -qi "io.dbeaver.DBeaverCommunity"; then
         echo "✅ Starting DBeaver via Flatpak..."
         flatpak run io.dbeaver.DBeaverCommunity &
+        disown
         exit 0
     fi
 fi
@@ -2682,12 +2699,14 @@ fi
 if command -v dbeaver-ce &> /dev/null; then
     echo "✅ Starting dbeaver-ce..."
     dbeaver-ce &
+    disown
     exit 0
 fi
 
 if command -v dbeaver &> /dev/null; then
     echo "✅ Starting dbeaver..."
     dbeaver &
+    disown
     exit 0
 fi
 
@@ -2696,17 +2715,24 @@ if command -v snap &> /dev/null; then
     if snap list 2>/dev/null | grep -qi dbeaver; then
         echo "✅ Starting DBeaver via Snap..."
         snap run dbeaver-ce &
+        disown
         exit 0
     fi
 fi
 
-# Not found
+# Not found - offer to install
 echo ""
 echo "❌ DBeaver not installed!"
 echo ""
 echo "Install with one of these commands:"
-echo "  sudo flatpak install flathub io.dbeaver.DBeaverCommunity"
+echo "  sudo flatpak install -y flathub io.dbeaver.DBeaverCommunity"
 echo "  Or download from: https://dbeaver.io/download/"
+echo ""
+read -p "Install now via Flatpak? [Y/n]: " install_now
+if [[ ! $install_now =~ ^[Nn]$ ]]; then
+    sudo flatpak install -y flathub io.dbeaver.DBeaverCommunity && \
+    flatpak run io.dbeaver.DBeaverCommunity &
+fi
 exit 1
 DBLAUNCHEREOF
 
@@ -2792,7 +2818,7 @@ step_31_final_summary() {
     echo ""
 }
 # ═══════════════════════════════════════════════════════════════════════════════
-# UNINSTALL FUNCTION - Complete System Cleanup
+# UNINSTALL FUNCTION - Complete System Cleanup (RETURNS TO MENU)
 # ═══════════════════════════════════════════════════════════════════════════════
 uninstall_everything() {
     clear
@@ -2804,13 +2830,14 @@ uninstall_everything() {
     echo "  ║                                                                   ║"
     echo "  ╠═══════════════════════════════════════════════════════════════════╣"
     echo "  ║  This will remove:                                                ║"
-    echo "  ║    • Oracle APEX Database Container                               ║"
+    echo "  ║    • Oracle APEX Database Container & Data                        ║"
     echo "  ║    • ORDS (Oracle REST Data Services)                             ║"
     echo "  ║    • All configuration files                                      ║"
-    echo "  ║    • All downloaded files                                         ║"
+    echo "  ║    • All downloaded files (APEX, ORDS zips)                       ║"
     echo "  ║    • Systemd services                                             ║"
-    echo "  ║    • Desktop shortcuts                                            ║"
-    echo "  ║    • DBeaver (if installed via this script)                       ║"
+    echo "  ║    • Desktop shortcuts & icons                                    ║"
+    echo "  ║    • Docker volumes                                               ║"
+    echo "  ║    • DBeaver (optional)                                           ║"
     echo "  ║                                                                   ║"
     echo "  ╚═══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -2819,16 +2846,20 @@ uninstall_everything() {
     read -p "  Are you sure you want to COMPLETELY UNINSTALL? [y/N]: " confirm
     if [[ ! $confirm =~ ^[Yy]$ ]]; then
         echo ""
-        log_info "Uninstall cancelled."
-        exit 0
+        log_info "Uninstall cancelled. Returning to menu..."
+        sleep 2
+        show_menu
+        return
     fi
     
     echo ""
     read -p "  Type 'DELETE' to confirm: " confirm_delete
     if [ "$confirm_delete" != "DELETE" ]; then
         echo ""
-        log_info "Uninstall cancelled. You must type DELETE to confirm."
-        exit 0
+        log_info "Uninstall cancelled. Returning to menu..."
+        sleep 2
+        show_menu
+        return
     fi
     
     echo ""
@@ -2837,13 +2868,11 @@ uninstall_everything() {
     # ═══════════════════════════════════════════════════════════════
     # Step 1: Stop all services
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 1/8: Stopping all services..."
+    log_info "Step 1/9: Stopping all services..."
     
-    # Stop ORDS process
     pkill -9 -f "ords" 2>/dev/null || true
     sleep 3
     
-    # Stop systemd services
     if command -v systemctl &> /dev/null; then
         sudo systemctl stop oracle-apex-ords.service 2>/dev/null || true
         sudo systemctl stop oracle-apex-db.service 2>/dev/null || true
@@ -2854,24 +2883,29 @@ uninstall_everything() {
     log_success "Services stopped"
     
     # ═══════════════════════════════════════════════════════════════
-    # Step 2: Remove Docker container and volume
+    # Step 2: Remove Docker container and ALL volumes
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 2/8: Removing Docker container and data..."
+    log_info "Step 2/9: Removing Docker container and ALL data..."
     
     docker stop oracle-apex-db 2>/dev/null || true
     docker rm -f oracle-apex-db 2>/dev/null || true
+    
+    # Remove ALL related volumes
     docker volume rm oracle-apex-complete_oracle-data 2>/dev/null || true
     docker volume rm oracle-data 2>/dev/null || true
+    docker volume ls -q 2>/dev/null | grep -iE "oracle|apex" | xargs -r docker volume rm -f 2>/dev/null || true
     
-    # Remove any orphan volumes related to this project
-    docker volume ls -q 2>/dev/null | grep -i "oracle\|apex" | xargs -r docker volume rm 2>/dev/null || true
+    # Remove docker compose stack
+    if [ -f "$HOME/oracle-apex-complete/docker-compose.yml" ]; then
+        cd "$HOME/oracle-apex-complete" && docker compose down -v --remove-orphans 2>/dev/null || true
+    fi
     
     log_success "Docker container and volumes removed"
     
     # ═══════════════════════════════════════════════════════════════
     # Step 3: Remove systemd service files
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 3/8: Removing systemd services..."
+    log_info "Step 3/9: Removing systemd services..."
     
     if command -v systemctl &> /dev/null; then
         sudo rm -f /etc/systemd/system/oracle-apex-db.service 2>/dev/null || true
@@ -2882,9 +2916,9 @@ uninstall_everything() {
     log_success "Systemd services removed"
     
     # ═══════════════════════════════════════════════════════════════
-    # Step 4: Remove project directory
+    # Step 4: Remove project directory COMPLETELY
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 4/8: Removing project directory..."
+    log_info "Step 4/9: Removing project directory..."
     
     rm -rf "$HOME/oracle-apex-complete" 2>/dev/null || true
     rm -rf "$HOME/oracle-apex" 2>/dev/null || true
@@ -2894,35 +2928,30 @@ uninstall_everything() {
     # ═══════════════════════════════════════════════════════════════
     # Step 5: Remove desktop shortcuts and icons
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 5/8: Removing desktop shortcuts..."
+    log_info "Step 5/9: Removing desktop shortcuts..."
     
     rm -f "$HOME/.local/share/applications/oracle-apex.desktop" 2>/dev/null || true
     rm -f "$HOME/.local/share/icons/oracle-apex-icon.svg" 2>/dev/null || true
     rm -f "$HOME/Desktop/oracle-apex.desktop" 2>/dev/null || true
-    
-    # Update desktop database
     update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
     
     log_success "Desktop shortcuts removed"
     
     # ═══════════════════════════════════════════════════════════════
-    # Step 6: Remove DBeaver (if installed via Flatpak)
+    # Step 6: Remove DBeaver (optional)
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 6/8: Checking DBeaver..."
+    log_info "Step 6/9: Checking DBeaver..."
     
     read -p "  Also remove DBeaver? [y/N]: " remove_dbeaver
     if [[ $remove_dbeaver =~ ^[Yy]$ ]]; then
         log_info "Removing DBeaver..."
         
-        # Flatpak
         flatpak uninstall --user io.dbeaver.DBeaverCommunity -y 2>/dev/null || true
         sudo flatpak uninstall io.dbeaver.DBeaverCommunity -y 2>/dev/null || true
         rm -rf "$HOME/.var/app/io.dbeaver.DBeaverCommunity" 2>/dev/null || true
         
-        # Snap
         sudo snap remove dbeaver-ce 2>/dev/null || true
         
-        # Native packages
         case "$OS_ID" in
             ubuntu|debian|linuxmint|pop)
                 sudo apt-get remove -y dbeaver dbeaver-ce 2>/dev/null || true
@@ -2938,11 +2967,7 @@ uninstall_everything() {
                 ;;
         esac
         
-        # Remove DBeaver config
-        rm -rf "$HOME/.dbeaver" 2>/dev/null || true
-        rm -rf "$HOME/.dbeaver4" 2>/dev/null || true
-        rm -rf "$HOME/.local/share/DBeaverData" 2>/dev/null || true
-        rm -rf "$HOME/.config/dbeaver" 2>/dev/null || true
+        rm -rf "$HOME/.dbeaver" "$HOME/.dbeaver4" "$HOME/.local/share/DBeaverData" "$HOME/.config/dbeaver" 2>/dev/null || true
         
         log_success "DBeaver removed"
     else
@@ -2952,74 +2977,56 @@ uninstall_everything() {
     # ═══════════════════════════════════════════════════════════════
     # Step 7: Clean up temporary files
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 7/8: Cleaning temporary files..."
+    log_info "Step 7/9: Cleaning temporary files..."
     
-    rm -f /tmp/apex*.zip 2>/dev/null || true
-    rm -f /tmp/ords*.zip 2>/dev/null || true
-    rm -f /tmp/oracle-apex-*.service 2>/dev/null || true
-    rm -f /tmp/dbeaver.* 2>/dev/null || true
-    rm -f "$HOME/fix-oracle-apex-issues.sh" 2>/dev/null || true
-    rm -f "$HOME/remove-dbeaver-completely.sh" 2>/dev/null || true
+    rm -f /tmp/apex*.zip /tmp/ords*.zip /tmp/oracle-apex-*.service /tmp/dbeaver.* 2>/dev/null || true
+    rm -f "$HOME/fix-oracle-apex-issues.sh" "$HOME/remove-dbeaver-completely.sh" 2>/dev/null || true
     
     log_success "Temporary files cleaned"
     
     # ═══════════════════════════════════════════════════════════════
-    # Step 8: Final verification
+    # Step 8: Clean unused Flatpak runtimes
     # ═══════════════════════════════════════════════════════════════
-    log_info "Step 8/8: Final verification..."
+    log_info "Step 8/9: Cleaning unused Flatpak data..."
+    
+    flatpak uninstall --unused -y 2>/dev/null || true
+    sudo flatpak uninstall --unused -y 2>/dev/null || true
+    
+    log_success "Flatpak cleaned"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Step 9: Final verification
+    # ═══════════════════════════════════════════════════════════════
+    log_info "Step 9/9: Final verification..."
     
     local all_clean=true
     
-    # Check Docker container
-    if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "oracle-apex-db"; then
-        log_warning "Docker container still exists"
-        all_clean=false
-    fi
+    docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "oracle-apex-db" && { log_warning "Docker container still exists"; all_clean=false; }
+    [ -d "$HOME/oracle-apex-complete" ] && { log_warning "Project directory still exists"; all_clean=false; }
+    [ -f "/etc/systemd/system/oracle-apex-db.service" ] && { log_warning "Systemd service still exists"; all_clean=false; }
     
-    # Check project directory
-    if [ -d "$HOME/oracle-apex-complete" ]; then
-        log_warning "Project directory still exists"
-        all_clean=false
-    fi
-    
-    # Check systemd services
-    if [ -f "/etc/systemd/system/oracle-apex-db.service" ]; then
-        log_warning "Systemd service file still exists"
-        all_clean=false
-    fi
-    
+    echo ""
     if [ "$all_clean" = true ]; then
-        echo ""
         echo -e "${GREEN}${BOLD}"
         echo "  ╔═══════════════════════════════════════════════════════════════════╗"
-        echo "  ║                                                                   ║"
         echo "  ║           ✅ UNINSTALL COMPLETED SUCCESSFULLY! ✅                 ║"
-        echo "  ║                                                                   ║"
         echo "  ╠═══════════════════════════════════════════════════════════════════╣"
-        echo "  ║                                                                   ║"
         echo "  ║  All Oracle APEX components have been removed.                    ║"
-        echo "  ║                                                                   ║"
-        echo "  ║  To reinstall, run:                                               ║"
-        echo "  ║    bash oracle-apex-installer.sh                                  ║"
-        echo "  ║                                                                   ║"
+        echo "  ║  You can now reinstall fresh from the menu.                       ║"
         echo "  ╚═══════════════════════════════════════════════════════════════════╝"
         echo -e "${NC}"
     else
-        echo ""
         echo -e "${YELLOW}${BOLD}"
         echo "  ╔═══════════════════════════════════════════════════════════════════╗"
-        echo "  ║                                                                   ║"
         echo "  ║           ⚠️  UNINSTALL COMPLETED WITH WARNINGS ⚠️                ║"
-        echo "  ║                                                                   ║"
         echo "  ║  Some components may not have been fully removed.                 ║"
-        echo "  ║  Please check the warnings above.                                 ║"
-        echo "  ║                                                                   ║"
         echo "  ╚═══════════════════════════════════════════════════════════════════╝"
         echo -e "${NC}"
     fi
     
     echo ""
-    exit 0
+    read -p "  Press ENTER to return to main menu..." _dummy
+    show_menu
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
