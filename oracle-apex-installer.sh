@@ -659,28 +659,224 @@ step_04_cleanup() {
     log_success "Cleanup completed"
 }
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 05: DOWNLOAD
+# STEP 05: DOWNLOAD (IRAN-FRIENDLY - GitHub Mirror Support)
 # ═══════════════════════════════════════════════════════════════════════════════
 step_05_download() {
-    log_step "Downloading Components"
+    log_step "Downloading Components (Smart Multi-Mirror)"
     cd "$PROJECT_DIR"
 
     local apex_path="$DOWNLOADS_DIR/$APEX_FILE"
     local ords_path="$DOWNLOADS_DIR/$ORDS_FILE"
 
-    validate_zip_file "$apex_path" "$APEX_MIN_SIZE" 2>/dev/null || {
-        rm -f "$DOWNLOADS_DIR"/apex*.zip 2>/dev/null
-        download_file "$APEX_URL" "$apex_path" "APEX" "$APEX_MIN_SIZE" || exit 1
+    # ═══════════════════════════════════════════════════════════════
+    # MIRROR CONFIGURATION
+    # Priority: 1. Local file, 2. GitHub Release, 3. Oracle Official
+    # ═══════════════════════════════════════════════════════════════
+    local GITHUB_REPO="KaizenixCore/oracle-apex-installer"
+    local GITHUB_RELEASE_TAG="v${VERSION}"
+    local GITHUB_RELEASE_BASE="https://github.com/${GITHUB_REPO}/releases/download/${GITHUB_RELEASE_TAG}"
+    
+    # Mirror URLs (GitHub first for Iran users, Oracle as backup)
+    local APEX_MIRRORS=(
+        "${GITHUB_RELEASE_BASE}/apex-latest.zip"
+        "https://download.oracle.com/otn_software/apex/apex-latest.zip"
+    )
+    
+    local ORDS_MIRRORS=(
+        "${GITHUB_RELEASE_BASE}/ords-latest.zip"
+        "https://download.oracle.com/otn_software/java/ords/ords-latest.zip"
+    )
+
+    # ═══════════════════════════════════════════════════════════════
+    # DOWNLOAD FUNCTION WITH SMART MIRROR SELECTION
+    # ═══════════════════════════════════════════════════════════════
+    smart_download_file() {
+        local output="$1"
+        local min_size="$2"
+        local name="$3"
+        shift 3
+        local mirrors=("$@")
+        
+        # Check if valid file already exists
+        if [ -f "$output" ]; then
+            local size=$(stat -c%s "$output" 2>/dev/null || stat -f%z "$output" 2>/dev/null || echo 0)
+            if [ "$size" -ge "$min_size" ] 2>/dev/null; then
+                log_info "Verifying existing $name..."
+                if unzip -t "$output" >/dev/null 2>&1; then
+                    log_success "$name already exists and valid ($(($size/1024/1024))MB)"
+                    return 0
+                fi
+            fi
+            log_warning "Existing $name is invalid, removing..."
+            rm -f "$output"
+        fi
+        
+        local mirror_num=1
+        local total=${#mirrors[@]}
+        
+        for url in "${mirrors[@]}"; do
+            local domain=$(echo "$url" | sed -E 's|https?://([^/]+).*|\1|')
+            
+            echo ""
+            log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            log_info "[$mirror_num/$total] Trying: $domain"
+            log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            # Quick connectivity check
+            log_info "Testing connection..."
+            local http_code=$(curl -sI -o /dev/null -w "%{http_code}" \
+                --connect-timeout 10 --max-time 15 "$url" 2>/dev/null || echo "000")
+            
+            case "$http_code" in
+                000)
+                    log_warning "❌ Connection timeout - site may be blocked"
+                    mirror_num=$((mirror_num + 1))
+                    continue
+                    ;;
+                404)
+                    log_warning "❌ File not found (404) - check if release exists"
+                    mirror_num=$((mirror_num + 1))
+                    continue
+                    ;;
+                403)
+                    log_warning "❌ Access denied (403)"
+                    mirror_num=$((mirror_num + 1))
+                    continue
+                    ;;
+                200|301|302|303)
+                    log_success "✓ Connection OK (HTTP $http_code)"
+                    ;;
+                *)
+                    log_warning "⚠ Unexpected response (HTTP $http_code), trying anyway..."
+                    ;;
+            esac
+            
+            # Download with progress
+            log_info "Downloading $name..."
+            rm -f "$output" 2>/dev/null
+            
+            if wget --progress=bar:force \
+                    --timeout=300 \
+                    --tries=3 \
+                    --continue \
+                    --show-progress \
+                    -O "$output" "$url" 2>&1; then
+                
+                # Verify download
+                if [ -f "$output" ]; then
+                    local size=$(stat -c%s "$output" 2>/dev/null || stat -f%z "$output" 2>/dev/null || echo 0)
+                    local size_mb=$(($size/1024/1024))
+                    local min_mb=$(($min_size/1024/1024))
+                    
+                    log_info "Downloaded: ${size_mb}MB (minimum: ${min_mb}MB)"
+                    
+                    if [ "$size" -ge "$min_size" ]; then
+                        log_info "Verifying ZIP integrity..."
+                        if unzip -t "$output" >/dev/null 2>&1; then
+                            echo ""
+                            log_success "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                            log_success "✅ $name downloaded successfully! (${size_mb}MB)"
+                            log_success "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                            return 0
+                        else
+                            log_error "❌ ZIP file is corrupted"
+                        fi
+                    else
+                        log_error "❌ File too small (${size_mb}MB < ${min_mb}MB)"
+                    fi
+                fi
+            else
+                log_warning "❌ Download failed"
+            fi
+            
+            rm -f "$output" 2>/dev/null
+            mirror_num=$((mirror_num + 1))
+        done
+        
+        return 1
     }
 
-    validate_zip_file "$ords_path" "$ORDS_MIN_SIZE" 2>/dev/null || {
-        rm -f "$DOWNLOADS_DIR"/ords*.zip 2>/dev/null
-        download_file "$ORDS_URL" "$ords_path" "ORDS" "$ORDS_MIN_SIZE" || exit 1
+    # ═══════════════════════════════════════════════════════════════
+    # MANUAL DOWNLOAD INSTRUCTIONS
+    # ═══════════════════════════════════════════════════════════════
+    show_download_help() {
+        local name="$1"
+        local github_url="$2"
+        local oracle_url="$3"
+        local dest="$4"
+        
+        echo ""
+        echo -e "${RED}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║              ❌ DOWNLOAD FAILED - MANUAL ACTION NEEDED            ║${NC}"
+        echo -e "${RED}╠═══════════════════════════════════════════════════════════════════╣${NC}"
+        echo -e "${RED}║${NC}  Could not download ${WHITE}$name${NC} from any mirror                       ${RED}║${NC}"
+        echo -e "${RED}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${YELLOW}┌─────────────────────────────────────────────────────────────────┐${NC}"
+        echo -e "${YELLOW}│${NC}  ${WHITE}📥 OPTION 1: Download from GitHub (Recommended for Iran)${NC}       ${YELLOW}│${NC}"
+        echo -e "${YELLOW}├─────────────────────────────────────────────────────────────────┤${NC}"
+        echo -e "${YELLOW}│${NC}  ${CYAN}$github_url${NC}"
+        echo -e "${YELLOW}└─────────────────────────────────────────────────────────────────┘${NC}"
+        echo ""
+        echo -e "${BLUE}┌─────────────────────────────────────────────────────────────────┐${NC}"
+        echo -e "${BLUE}│${NC}  ${WHITE}📥 OPTION 2: Download from Oracle (May need VPN)${NC}               ${BLUE}│${NC}"
+        echo -e "${BLUE}├─────────────────────────────────────────────────────────────────┤${NC}"
+        echo -e "${BLUE}│${NC}  ${CYAN}$oracle_url${NC}"
+        echo -e "${BLUE}└─────────────────────────────────────────────────────────────────┘${NC}"
+        echo ""
+        echo -e "${GREEN}┌─────────────────────────────────────────────────────────────────┐${NC}"
+        echo -e "${GREEN}│${NC}  ${WHITE}📁 After downloading, place file here:${NC}                        ${GREEN}│${NC}"
+        echo -e "${GREEN}├─────────────────────────────────────────────────────────────────┤${NC}"
+        echo -e "${GREEN}│${NC}  ${CYAN}$dest${NC}"
+        echo -e "${GREEN}├─────────────────────────────────────────────────────────────────┤${NC}"
+        echo -e "${GREEN}│${NC}  ${WHITE}Then run this script again${NC}                                    ${GREEN}│${NC}"
+        echo -e "${GREEN}└─────────────────────────────────────────────────────────────────┘${NC}"
+        echo ""
     }
 
+    # ═══════════════════════════════════════════════════════════════
+    # DOWNLOAD APEX
+    # ═══════════════════════════════════════════════════════════════
+    echo ""
+    echo -e "${MAGENTA}${BOLD}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}${BOLD}║          📦 DOWNLOADING APEX (Oracle Application Express)        ║${NC}"
+    echo -e "${MAGENTA}${BOLD}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    
+    if ! smart_download_file "$apex_path" "$APEX_MIN_SIZE" "APEX" "${APEX_MIRRORS[@]}"; then
+        show_download_help "APEX" \
+            "https://github.com/${GITHUB_REPO}/releases/download/${GITHUB_RELEASE_TAG}/apex-latest.zip" \
+            "https://download.oracle.com/otn_software/apex/apex-latest.zip" \
+            "$DOWNLOADS_DIR/apex-latest.zip"
+        exit 1
+    fi
+
+    # ═══════════════════════════════════════════════════════════════
+    # DOWNLOAD ORDS
+    # ═══════════════════════════════════════════════════════════════
+    echo ""
+    echo -e "${MAGENTA}${BOLD}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}${BOLD}║          📦 DOWNLOADING ORDS (Oracle REST Data Services)         ║${NC}"
+    echo -e "${MAGENTA}${BOLD}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    
+    if ! smart_download_file "$ords_path" "$ORDS_MIN_SIZE" "ORDS" "${ORDS_MIRRORS[@]}"; then
+        show_download_help "ORDS" \
+            "https://github.com/${GITHUB_REPO}/releases/download/${GITHUB_RELEASE_TAG}/ords-latest.zip" \
+            "https://download.oracle.com/otn_software/java/ords/ords-latest.zip" \
+            "$DOWNLOADS_DIR/ords-latest.zip"
+        exit 1
+    fi
+
+    # ═══════════════════════════════════════════════════════════════
+    # SUCCESS
+    # ═══════════════════════════════════════════════════════════════
+    echo ""
+    echo -e "${GREEN}${BOLD}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}${BOLD}║              ✅ ALL DOWNLOADS COMPLETED SUCCESSFULLY!             ║${NC}"
+    echo -e "${GREEN}${BOLD}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
     log_success "Downloads ready"
 }
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 06: EXTRACT
 # ═══════════════════════════════════════════════════════════════════════════════
