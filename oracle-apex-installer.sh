@@ -2249,10 +2249,10 @@ GUIEOF2
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 28: CREATE DESKTOP AND SERVICES
+# STEP 28: CREATE DESKTOP AND SERVICES (FIXED AUTO-START)
 # ═══════════════════════════════════════════════════════════════════════════════
 step_28_create_desktop_and_services() {
-    log_step "Creating Desktop Application & Systemd Services"
+    log_step "Creating Desktop Application & Systemd Services (FIXED)"
 
     mkdir -p "$HOME/.local/share/applications" "$HOME/.local/share/icons"
     
@@ -2294,92 +2294,130 @@ DESKTOPEOF
     
     log_success "Desktop application created"
 
-    # Create systemd services (Linux only)
+    # ═══════════════════════════════════════════════════════════════
+    # CREATE SYSTEMD SERVICES (Linux only) - COMPLETELY FIXED
+    # ═══════════════════════════════════════════════════════════════
     if [[ "$OS_TYPE" == "linux" ]] && command -v systemctl &> /dev/null; then
         local ORDS_BIN_PATH=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
-        local ACTUAL_PASS="$ORACLE_PASSWORD"
         
         if [ -n "$ORDS_BIN_PATH" ]; then
         
-            # ═══════════════════════════════════════════════════════════════
-            # NEW: Create systemd recovery script (fixes auto-start issues)
-            # ═══════════════════════════════════════════════════════════════
-            log_info "Creating systemd recovery script..."
+            log_info "Creating auto-start scripts and services..."
             
-            cat > "$SCRIPTS_DIR/systemd-db-recovery.sh" << 'DBRECOVERYEOF'
+            # ═══════════════════════════════════════════════════════════════
+            # 1. Create COMPLETE startup script (handles everything)
+            # ═══════════════════════════════════════════════════════════════
+            cat > "$SCRIPTS_DIR/systemd-startup.sh" << 'STARTUPEOF'
 #!/bin/bash
-# Systemd Database Recovery Script - Runs before ORDS starts
-# This ensures database users are properly configured after reboot
+#═══════════════════════════════════════════════════════════════════════════════
+# Oracle APEX Auto-Start Script - KaizenixCore
+# This script runs at boot to start all Oracle APEX services
+#═══════════════════════════════════════════════════════════════════════════════
 
 PROJECT_DIR="$HOME/oracle-apex-complete"
-LOG_FILE="$PROJECT_DIR/logs/systemd-recovery.log"
-MAX_WAIT=180  # Maximum seconds to wait for database
+LOG_FILE="$PROJECT_DIR/logs/autostart.log"
+MAX_DB_WAIT=300
+MAX_ORDS_WAIT=120
 
+# Create log directory
 mkdir -p "$(dirname "$LOG_FILE")"
-exec >> "$LOG_FILE" 2>&1
-echo "=========================================="
-echo "Recovery started at: $(date)"
-echo "=========================================="
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+log "═══════════════════════════════════════════════════════════════"
+log "Oracle APEX Auto-Start initiated"
+log "═══════════════════════════════════════════════════════════════"
 
 # Read password
 PASS=""
 if [ -f "$PROJECT_DIR/.db_password" ]; then
-    PASS=$(cat "$PROJECT_DIR/.db_password" 2>/dev/null | tr -d '\n\r')
+    PASS=$(cat "$PROJECT_DIR/.db_password" 2>/dev/null | tr -d '\n\r\t ')
 fi
 
 if [ -z "$PASS" ]; then
-    echo "ERROR: Cannot read database password"
+    log "ERROR: Cannot read database password from $PROJECT_DIR/.db_password"
     exit 1
 fi
+log "Password file read successfully"
 
-# Wait for database container to be running
-echo "Waiting for database container..."
-WAITED=0
-while [ $WAITED -lt $MAX_WAIT ]; do
-    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^oracle-apex-db$"; then
-        echo "Container is running after ${WAITED}s"
-        break
-    fi
+# ═══════════════════════════════════════════════════════════════
+# STEP 1: Start Docker container
+# ═══════════════════════════════════════════════════════════════
+log "STEP 1: Starting Docker container..."
+
+# Make sure Docker is running
+DOCKER_WAIT=0
+while ! docker info &>/dev/null; do
+    log "Waiting for Docker daemon... ($DOCKER_WAIT sec)"
     sleep 5
-    WAITED=$((WAITED + 5))
+    DOCKER_WAIT=$((DOCKER_WAIT + 5))
+    if [ $DOCKER_WAIT -ge 60 ]; then
+        log "ERROR: Docker daemon not available after 60 seconds"
+        exit 1
+    fi
 done
+log "Docker daemon is ready"
 
-if [ $WAITED -ge $MAX_WAIT ]; then
-    echo "ERROR: Database container not running after ${MAX_WAIT}s"
-    exit 1
+# Start container
+if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^oracle-apex-db$"; then
+    log "Starting oracle-apex-db container..."
+    docker start oracle-apex-db 2>&1 | tee -a "$LOG_FILE"
+    sleep 10
+else
+    log "Container already running"
 fi
 
-# Wait for database to be ready (accepting connections)
-echo "Waiting for database to accept connections..."
-WAITED=0
-while [ $WAITED -lt $MAX_WAIT ]; do
+# ═══════════════════════════════════════════════════════════════
+# STEP 2: Wait for database to be ready
+# ═══════════════════════════════════════════════════════════════
+log "STEP 2: Waiting for database to be ready..."
+
+DB_WAIT=0
+DB_READY=false
+
+while [ $DB_WAIT -lt $MAX_DB_WAIT ]; do
+    # Check if database accepts connections
     if docker exec oracle-apex-db sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba <<< "SELECT 1 FROM DUAL; EXIT;" 2>/dev/null | grep -q "1"; then
-        echo "Database is ready after ${WAITED}s"
+        log "Database is accepting connections after $DB_WAIT seconds"
+        DB_READY=true
         break
     fi
+    
+    log "Database not ready yet... ($DB_WAIT/$MAX_DB_WAIT sec)"
     sleep 10
-    WAITED=$((WAITED + 10))
+    DB_WAIT=$((DB_WAIT + 10))
 done
 
-if [ $WAITED -ge $MAX_WAIT ]; then
-    echo "ERROR: Database not ready after ${MAX_WAIT}s"
+if [ "$DB_READY" = false ]; then
+    log "ERROR: Database not ready after $MAX_DB_WAIT seconds"
     exit 1
 fi
 
-# Run recovery SQL commands
-echo "Running recovery SQL commands..."
-docker exec oracle-apex-db sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << SQLEOF
--- Unlock and configure ORDS_PUBLIC_USER
+# Extra wait for stability
+log "Waiting 30 more seconds for database stability..."
+sleep 30
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 3: Unlock and configure users
+# ═══════════════════════════════════════════════════════════════
+log "STEP 3: Unlocking and configuring database users..."
+
+docker exec oracle-apex-db sqlplus -s sys/${PASS}@//localhost:1521/XEPDB1 as sysdba << SQLEOF 2>&1 | tee -a "$LOG_FILE"
+-- Unlock all required users
 ALTER USER ORDS_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
-ALTER USER ORDS_PUBLIC_USER DEFAULT TABLESPACE SYSAUX TEMPORARY TABLESPACE TEMP;
-
--- Unlock and configure APEX_PUBLIC_USER
 ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
+ALTER USER APEX_LISTENER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
+ALTER USER APEX_REST_PUBLIC_USER IDENTIFIED BY ${PASS} ACCOUNT UNLOCK;
 
--- Grant proxy authentication
+-- Grant proxy authentication (CRITICAL for APEX)
 ALTER USER APEX_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_LISTENER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
+ALTER USER APEX_REST_PUBLIC_USER GRANT CONNECT THROUGH ORDS_PUBLIC_USER;
 
--- Ensure required privileges
+-- Ensure privileges
 GRANT CREATE SESSION TO ORDS_PUBLIC_USER;
 GRANT CREATE SESSION TO APEX_PUBLIC_USER;
 
@@ -2387,97 +2425,158 @@ COMMIT;
 EXIT;
 SQLEOF
 
-if [ $? -eq 0 ]; then
-    echo "SUCCESS: Recovery SQL completed"
-else
-    echo "WARNING: Some SQL commands may have failed (non-critical)"
+log "Database users configured"
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 4: Stop any existing ORDS process
+# ═══════════════════════════════════════════════════════════════
+log "STEP 4: Stopping any existing ORDS process..."
+
+pkill -9 -f "ords" 2>/dev/null || true
+sleep 5
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 5: Start ORDS
+# ═══════════════════════════════════════════════════════════════
+log "STEP 5: Starting ORDS..."
+
+ORDS_BIN=$(find "$PROJECT_DIR/ords" -name "ords" -type f 2>/dev/null | head -1)
+
+if [ -z "$ORDS_BIN" ]; then
+    log "ERROR: ORDS binary not found"
+    exit 1
 fi
 
-echo "Recovery finished at: $(date)"
-echo ""
-exit 0
-DBRECOVERYEOF
+export ORDS_CONFIG="$PROJECT_DIR/ords_config"
+export _JAVA_OPTIONS="-Xms512m -Xmx1024m"
+export HOME="$HOME"
 
-            chmod +x "$SCRIPTS_DIR/systemd-db-recovery.sh"
-            log_success "Recovery script created: $SCRIPTS_DIR/systemd-db-recovery.sh"
+log "Starting ORDS from: $ORDS_BIN"
+nohup "$ORDS_BIN" --config "$PROJECT_DIR/ords_config" serve \
+    --port 8080 \
+    --apex-images "$PROJECT_DIR/images" \
+    >> "$PROJECT_DIR/logs/ords.log" 2>&1 &
+
+ORDS_PID=$!
+echo $ORDS_PID > "$PROJECT_DIR/ords.pid"
+log "ORDS started with PID: $ORDS_PID"
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 6: Verify ORDS is running
+# ═══════════════════════════════════════════════════════════════
+log "STEP 6: Verifying ORDS is running..."
+
+ORDS_WAIT=0
+ORDS_READY=false
+
+while [ $ORDS_WAIT -lt $MAX_ORDS_WAIT ]; do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ords/ 2>/dev/null || echo "000")
+    
+    if [[ "$HTTP_CODE" =~ ^(200|301|302|303)$ ]]; then
+        log "ORDS is responding with HTTP $HTTP_CODE after $ORDS_WAIT seconds"
+        ORDS_READY=true
+        break
+    fi
+    
+    log "ORDS not ready yet (HTTP $HTTP_CODE)... ($ORDS_WAIT/$MAX_ORDS_WAIT sec)"
+    sleep 10
+    ORDS_WAIT=$((ORDS_WAIT + 10))
+done
+
+if [ "$ORDS_READY" = false ]; then
+    log "WARNING: ORDS may not be fully ready, but process is running"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# COMPLETE
+# ═══════════════════════════════════════════════════════════════
+log "═══════════════════════════════════════════════════════════════"
+log "Oracle APEX Auto-Start COMPLETED"
+log "  APEX Admin: http://localhost:8080/ords/apex_admin"
+log "  APEX Login: http://localhost:8080/ords/f?p=4550"
+log "═══════════════════════════════════════════════════════════════"
+
+exit 0
+STARTUPEOF
+
+            chmod +x "$SCRIPTS_DIR/systemd-startup.sh"
+            log_success "Auto-start script created"
             
             # ═══════════════════════════════════════════════════════════════
-            # Database service (IMPROVED)
+            # 2. Create systemd service file (SINGLE service that does everything)
             # ═══════════════════════════════════════════════════════════════
-            cat > /tmp/oracle-apex-db.service << DBSVCEOF
+            log_info "Creating systemd service..."
+            
+            # Get actual home directory and user
+            local REAL_HOME="$HOME"
+            local REAL_USER="$USER"
+            
+            cat > /tmp/oracle-apex.service << SVCEOF
 [Unit]
-Description=Oracle APEX Database Container
+Description=Oracle APEX Complete Stack (Database + ORDS)
 After=docker.service network-online.target
-Requires=docker.service
 Wants=network-online.target
+Requires=docker.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-User=$USER
-ExecStartPre=/bin/sleep 10
-ExecStartPre=/bin/bash -c '/usr/bin/docker ps -a --format "{{.Names}}" | grep -q "^oracle-apex-db$" || exit 0'
-ExecStart=/usr/bin/docker start oracle-apex-db
-ExecStop=/usr/bin/docker stop -t 30 oracle-apex-db
-TimeoutStartSec=300
-TimeoutStopSec=60
-
-[Install]
-WantedBy=multi-user.target
-DBSVCEOF
-
-            # ═══════════════════════════════════════════════════════════════
-            # ORDS service (IMPROVED - uses recovery script)
-            # ═══════════════════════════════════════════════════════════════
-            cat > /tmp/oracle-apex-ords.service << ORDSSVCEOF
-[Unit]
-Description=Oracle APEX ORDS Service
-After=oracle-apex-db.service
-Requires=oracle-apex-db.service
-
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$PROJECT_DIR
-Environment="ORDS_CONFIG=$ORDS_CONFIG_DIR"
-Environment="_JAVA_OPTIONS=-Xms512m -Xmx1024m"
-Environment="HOME=$HOME"
-ExecStartPre=/bin/bash $SCRIPTS_DIR/systemd-db-recovery.sh
-ExecStart=$ORDS_BIN_PATH --config $ORDS_CONFIG_DIR serve --port 8080 --apex-images $IMAGES_DIR
-Restart=always
-RestartSec=30
+User=${REAL_USER}
+Environment="HOME=${REAL_HOME}"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/bin/bash ${REAL_HOME}/oracle-apex-complete/scripts/systemd-startup.sh
+ExecStop=/bin/bash -c 'pkill -f ords; sleep 3; docker stop oracle-apex-db'
 TimeoutStartSec=600
-StandardOutput=append:$LOG_DIR/ords.log
-StandardError=append:$LOG_DIR/ords.log
+TimeoutStopSec=60
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
-ORDSSVCEOF
+SVCEOF
 
+            # Install service
             if command -v sudo &> /dev/null; then
-                log_info "Installing systemd services..."
-                sudo mv /tmp/oracle-apex-db.service /etc/systemd/system/ 2>/dev/null || true
-                sudo mv /tmp/oracle-apex-ords.service /etc/systemd/system/ 2>/dev/null || true
-                sudo systemctl daemon-reload 2>/dev/null || true
+                log_info "Installing systemd service..."
                 
-                log_success "Systemd services created"
+                # Remove old services if exist
+                sudo systemctl stop oracle-apex-ords.service 2>/dev/null || true
+                sudo systemctl stop oracle-apex-db.service 2>/dev/null || true
+                sudo systemctl disable oracle-apex-ords.service 2>/dev/null || true
+                sudo systemctl disable oracle-apex-db.service 2>/dev/null || true
+                sudo rm -f /etc/systemd/system/oracle-apex-ords.service 2>/dev/null || true
+                sudo rm -f /etc/systemd/system/oracle-apex-db.service 2>/dev/null || true
                 
+                # Install new unified service
+                sudo mv /tmp/oracle-apex.service /etc/systemd/system/oracle-apex.service
+                sudo chmod 644 /etc/systemd/system/oracle-apex.service
+                sudo systemctl daemon-reload
+                
+                log_success "Systemd service installed"
+                
+                # Ask to enable auto-start
+                echo ""
                 read -p "  Enable auto-start on boot? [Y/n]: " enable_autostart
                 if [[ ! $enable_autostart =~ ^[Nn]$ ]]; then
-                    sudo systemctl enable oracle-apex-db.service 2>/dev/null || true
-                    sudo systemctl enable oracle-apex-ords.service 2>/dev/null || true
-                    log_success "Auto-start enabled"
-                    
-                    # ═══════════════════════════════════════════════════════════════
-                    # NEW: Show helpful info about auto-start
-                    # ═══════════════════════════════════════════════════════════════
-                    log_info "After reboot, services will start automatically."
-                    log_info "Check status with: sudo systemctl status oracle-apex-db.service"
-                    log_info "Check ORDS with: sudo systemctl status oracle-apex-ords.service"
-                    log_info "View recovery log: cat $LOG_DIR/systemd-recovery.log"
+                    sudo systemctl enable oracle-apex.service
+                    log_success "✅ Auto-start ENABLED!"
+                    echo ""
+                    log_info "After reboot, Oracle APEX will start automatically."
+                    log_info "This may take 2-3 minutes after boot."
+                    log_info ""
+                    log_info "Check status with:"
+                    log_info "  sudo systemctl status oracle-apex.service"
+                    log_info "  cat ~/oracle-apex-complete/logs/autostart.log"
+                else
+                    log_info "Auto-start not enabled. Start manually with:"
+                    log_info "  bash ~/oracle-apex-complete/scripts/start.sh"
                 fi
             fi
+        else
+            log_warning "ORDS binary not found, skipping systemd setup"
         fi
+    else
+        log_info "Systemd not available, skipping service creation"
     fi
     
     log_success "Desktop and services configuration completed"
